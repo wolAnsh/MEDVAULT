@@ -1,0 +1,123 @@
+{
+  "Header": {
+    "title": "Welcome to MedVault",
+    "paragraph": "Your Personal Medical Report Vault"
+  },
+  "About": {
+    "paragraph": "At MediVault, we believe in simplifying healthcare record management. Carrying physical files is a hassle, and medical data deserves to be organized, accessible, and secure. Our platform allows you to upload your medical reports, manage your health records, and securely share them with doctors using time-bound, unique access codes — no paperwork required. We combine the convenience of digital access with the security your sensitive information deserves.",
+"Why": [
+  "Secure, encrypted cloud storage for your medical records",
+  "Instant Qr code-based sharing with doctors — no paperwork needed",
+  "AI-powered insights from your uploaded reports",
+  "Track your past diagnoses, medications, and doctor visits in one place"
+],
+"Why2": [
+  "Time-bound sharing codes to control who accesses your data and when",
+  "User-friendly, mobile-first interface for easy access anywhere",
+  "Protect your health data privacy with end-to-end encryption",
+  "Seamlessly manage and share your health records without hassle"
+]
+
+  },
+"Services": [
+  {
+    "icon": "fa fa-file-text",
+    "name": "Upload & Manage Reports",
+    "text": "Safely upload, store, and organize your medical reports in a secure cloud vault — accessible anytime, anywhere."
+  },
+  {
+    "icon": "fa fa-lock",
+    "name": "Secure Code-Based Sharing",
+    "text": "Generate unique, time-limited access codes to share your medical records with doctors without worrying about data privacy."
+  },
+  {
+    "icon": "fa fa-line-chart",
+    "name": "AI-Powered Report Insights",
+    "text": "Our AI engine analyzes your reports, highlights key health indicators, and provides helpful summaries for better decision-making."
+  },
+  {
+    "icon": "fa fa-history",
+    "name": "Health History Tracking",
+    "text": "Maintain a personal record of your past diagnoses, medications, treatments, and doctor consultations — all in one place."
+  },
+  {
+    "icon": "fa fa-mobile",
+    "name": "Mobile-Friendly Access",
+    "text": "View, manage, and share your health records from any device with our fully responsive and easy-to-use platform."
+  },
+  {
+    "icon": "fa fa-clock-o",
+    "name": "Time-Bound Secure Sharing",
+    "text": "Control who accesses your medical data and for how long, with time-restricted sharing links that automatically expire."
+  }
+],
+  "Testimonials": [
+    {
+      "img": "img/testimonials/01.jpg",
+      "text": "\"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis sed dapibus leo nec ornare diam sedasd commodo nibh ante facilisis bibendum dolor feugiat at.\"",
+      "name": "John Doe"
+    },
+    {
+      "img": "img/testimonials/02.jpg",
+      "text": "\"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis sed dapibus leo nec ornare diam sedasd commodo nibh ante facilisis bibendum dolor feugiat at.\"",
+      "name": "Johnathan Doe"
+    },
+    {
+      "img": "img/testimonials/03.jpg",
+      "text": "\"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis sed dapibus leo nec ornare diam sedasd commodo nibh ante facilisis bibendum dolor feugiat at.\"",
+      "name": "John Doe"
+    },
+    {
+      "img": "img/testimonials/04.jpg",
+      "text": "\"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis sed dapibus leo nec ornare diam sedasd commodo nibh ante facilisis bibendum dolor feugiat at.\"",
+      "name": "Johnathan Doe"
+    },
+    {
+      "img": "img/testimonials/05.jpg",
+      "text": "\"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis sed dapibus leo nec ornare diam sedasd commodo nibh ante facilisis bibendum dolor feugiat at.\"",
+      "name": "John Doe"
+    },
+    {
+      "img": "img/testimonials/06.jpg",
+      "text": "\"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis sed dapibus leo nec ornare diam sedasd commodo nibh ante facilisis bibendum dolor feugiat at.\"",
+      "name": "Johnathan Doe"
+    }
+  ],
+  "Team": [
+    {
+      "img": "img/team/02.jpg",
+      "name": "Anshu Yadav",
+      "job": "Founder and developer"
+    }
+  ],
+  "Contact": {
+    "address": "BH-1, IIIT ALLAHABAD",
+    "phone": "+91 7033283209",
+    "email": "contact@MedVault.com",
+    "facebook": "fb.com",
+    "twitter": "twitter.com",
+    "youtube": "youtube.com"
+  },
+  "Features": [
+  {
+    "icon": "fa fa-cloud-upload",
+    "title": "Cloud-Based Storage",
+    "text": "Safely upload and store your medical reports on a secure cloud platform, accessible from anywhere."
+  },
+  {
+    "icon": "fa fa-lock",
+    "title": "Data Privacy & Security",
+    "text": "Your health data is encrypted and protected with end-to-end security, ensuring only authorized access."
+  },
+  {
+    "icon": "fa fa-qrcode",
+    "title": "Instant Code Sharing",
+    "text": "Generate unique access codes to securely share your reports with doctors and specialists on demand."
+  },
+  {
+    "icon": "fa fa-lightbulb-o",
+    "title": "AI-Based Health Insights",
+    "text": "Get quick summaries and key health highlights from your reports, powered by AI analysis tools."
+  }
+]
+}
