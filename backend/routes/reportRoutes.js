@@ -15,8 +15,10 @@ router.post("/addReport", async (req, res) => {
     const newReport = {
       fileUrl,
       fileName,
-      description
+      description,
+      uploadedAt: new Date()
     }
+
 
     if (userReports) {
       // if exists, push new report
