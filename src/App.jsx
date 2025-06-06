@@ -13,6 +13,7 @@ import SmoothScroll from "smooth-scroll";
 
 import Login from "./components/login";     // Create this
 import Signup from "./components/signup";   // Create this
+import Home from "./components/home";
 
 import "./App.css";
 
@@ -47,6 +48,7 @@ const App = () => {
         <Route path="/" element={<LandingPage data={landingPageData} />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/home" element={<Home />} />
       </Routes>
     </Router>
   );
