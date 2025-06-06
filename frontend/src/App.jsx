@@ -14,6 +14,8 @@ import SmoothScroll from "smooth-scroll";
 import Login from "./components/login";     // Create this
 import Signup from "./components/signup";   // Create this
 import Home from "./components/home";
+import Medupload from "./components/medupload";
+import ViewReports from "./components/viewReports";
 
 import "./App.css";
 
@@ -49,6 +51,8 @@ const App = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/home" element={<Home />} />
+        <Route path="/upload" element={<Medupload />} />
+        <Route path="/reports" element={<ViewReports />} />
       </Routes>
     </Router>
   );
