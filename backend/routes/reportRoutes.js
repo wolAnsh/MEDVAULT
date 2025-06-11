@@ -1,10 +1,16 @@
-// import express from "express"
-// import UserReports from "../models/UserReports.js"
+
 const express = require("express")
 const UserReports = require("../models/UserReports.js")
 const router = express.Router()
 const userId = 107
-// Add a report for a user
+const { generateShareLink, accessSharedReport } = require('../controllers/reportController');
+
+
+router.post('/generate-share-link/:fileName', generateShareLink);
+router.get('/shared/:token', accessSharedReport);
+
+module.exports = router;
+
 router.post("/addReport", async (req, res) => {
   try {
     const { userId, fileUrl, fileName, description } = req.body

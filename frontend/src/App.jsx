@@ -10,7 +10,7 @@ import { Team } from "./components/Team";
 import { Contact } from "./components/contact";
 import JsonData from "./data/data.json";
 import SmoothScroll from "smooth-scroll";
-
+import SharedReport from './pages/SharedReport';
 import Login from "./components/Login";     // Create this
 import Signup from "./components/Signup";   // Create this
 import Home from "./components/home";
@@ -52,6 +52,7 @@ const App = () => {
         <Route path="/home" element={<Home />} />
         <Route path="/upload" element={<Medupload />} />
         <Route path="/reports" element={<ViewReports />} />
+        <Route path="/shared/:token" element={<SharedReport />} />
       </Routes>
     </Router>
   );
