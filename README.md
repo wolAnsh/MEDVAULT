@@ -1,4 +1,4 @@
-````markdown
+
 # MedVault
 
 MedVault is a secure and user-friendly platform designed to store, manage, and share medical reports effortlessly. It enables patients to upload their medical records and share them with doctors through shareable codes, with control over access duration and easy patient history tracking.
