@@ -47,7 +47,7 @@ Follow these steps to get a local development environment up and running.
    ```bash
    git clone https://github.com/wolAnsh/MEDVAULT.git
    cd MEDVAULT
-````
+   ````
 
 2. **Setup Backend**
 
