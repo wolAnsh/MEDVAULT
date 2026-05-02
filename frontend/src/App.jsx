@@ -11,11 +11,12 @@ import { Contact } from "./components/contact";
 import JsonData from "./data/data.json";
 import SmoothScroll from "smooth-scroll";
 import SharedReport from './pages/SharedReport';
-import Login from "./components/Login";     // Create this
-import Signup from "./components/Signup";   // Create this
+import Login from "./components/Login";
+import Signup from "./components/Signup";
 import Home from "./components/home";
 import Medupload from "./components/medupload";
 import ViewReports from "./components/viewReports";
+import AuthGuard from "./components/AuthGuard";
 import "./App.css";
 
 export const scroll = new SmoothScroll('a[href*="#"]', {
@@ -46,13 +47,16 @@ const App = () => {
   return (
     <Router>
       <Routes>
+        {/* Public routes */}
         <Route path="/" element={<LandingPage data={landingPageData} />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
-        <Route path="/home" element={<Home />} />
-        <Route path="/upload" element={<Medupload />} />
-        <Route path="/reports" element={<ViewReports />} />
         <Route path="/shared/:token" element={<SharedReport />} />
+
+        {/* Protected routes — require valid JWT */}
+        <Route path="/home" element={<AuthGuard><Home /></AuthGuard>} />
+        <Route path="/upload" element={<AuthGuard><Medupload /></AuthGuard>} />
+        <Route path="/reports" element={<AuthGuard><ViewReports /></AuthGuard>} />
       </Routes>
     </Router>
   );

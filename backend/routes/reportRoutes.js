@@ -1,59 +1,66 @@
-
-const express = require("express")
-const UserReports = require("../models/UserReports.js")
+const express = require('express')
 const router = express.Router()
-const userId = 107
-const { generateShareLink, accessSharedReport } = require('../controllers/reportController');
+const UserReports = require('../models/UserReports')
+const verifyToken = require('../middleware/verifyToken')
+const {
+  generateShareLink,
+  accessSharedReport,
+  deleteReport,
+  updateDescription
+} = require('../controllers/reportController')
 
+// ── Access Shared Report (public — no auth needed) ────────────────────────────
+// This MUST be before router.use(verifyToken)
+router.get('/shared/:token', accessSharedReport)
 
-router.post('/generate-share-link/:fileName', generateShareLink);
-router.get('/shared/:token', accessSharedReport);
+// ── All routes below require a valid JWT ──────────────────────────────────────
+router.use(verifyToken)
 
-module.exports = router;
+// ── Share Link & QR ───────────────────────────────────────────────────────────
+router.post('/generate-share-link/:fileName', generateShareLink)
 
-router.post("/addReport", async (req, res) => {
+// ── Add Report ────────────────────────────────────────────────────────────────
+router.post('/addReport', async (req, res) => {
   try {
-    const { userId, fileUrl, fileName, description } = req.body
+    const userId = req.user.id
+    const { fileUrl, fileName, description } = req.body
 
-    // check if user already has a document
-    let userReports = await UserReports.findOne({ userId })
-
-    const newReport = {
-      fileUrl,
-      fileName,
-      description,
-      uploadedAt: new Date()
+    if (!fileUrl || !fileName) {
+      return res.status(400).json({ message: 'fileUrl and fileName are required.' })
     }
 
+    let userReports = await UserReports.findOne({ userId })
+    const newReport = { fileUrl, fileName, description, uploadedAt: new Date() }
 
     if (userReports) {
-      // if exists, push new report
       userReports.reports.push(newReport)
     } else {
-      // if not, create new userReports document
-      userReports = new UserReports({
-        userId,
-        reports: [newReport]
-      })
+      userReports = new UserReports({ userId, reports: [newReport] })
     }
 
     await userReports.save()
-    res.status(201).json({ message: "Report added successfully!" })
-
+    res.status(201).json({ message: 'Report added successfully!' })
   } catch (error) {
     res.status(500).json({ message: error.message })
   }
 })
 
-// Get all reports for a user
-router.get("/getReports/:userId", async (req, res) => {
+// ── Get All Reports ───────────────────────────────────────────────────────────
+router.get('/getReports', async (req, res) => {
   try {
-    const userReports = await UserReports.findOne({ userId: req.params.userId })
-    if (!userReports) return res.status(404).json({ message: "No reports found." })
+    const userId = req.user.id
+    const userReports = await UserReports.findOne({ userId })
+    if (!userReports) return res.json([])
     res.json(userReports.reports)
   } catch (error) {
     res.status(500).json({ message: error.message })
   }
 })
+
+// ── Delete Report ─────────────────────────────────────────────────────────────
+router.delete('/deleteReport/:fileName', deleteReport)
+
+// ── Update Description ────────────────────────────────────────────────────────
+router.put('/updateDescription/:fileName', updateDescription)
 
 module.exports = router

@@ -1,133 +1,353 @@
-import { useEffect, useState } from 'react'
-import axios from 'axios'
+import { useEffect, useState, useCallback } from 'react'
+import api from '../api/config'
 import './viewReports.css'
 
-const userId = 107;
+// ── Toast helper ──────────────────────────────────────────────────────────────
+function useToast() {
+  const [toasts, setToasts] = useState([])
+  const addToast = useCallback((message, type = 'info') => {
+    const id = Date.now()
+    setToasts(prev => [...prev, { id, message, type }])
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3500)
+  }, [])
+  return { toasts, addToast }
+}
 
+// ── Expiry countdown ──────────────────────────────────────────────────────────
+function useCountdown(expiresAt) {
+  const [secondsLeft, setSecondsLeft] = useState(null)
+  useEffect(() => {
+    if (!expiresAt) return
+    const calc = () => {
+      const diff = Math.max(0, Math.floor((new Date(expiresAt) - Date.now()) / 1000))
+      setSecondsLeft(diff)
+    }
+    calc()
+    const interval = setInterval(calc, 1000)
+    return () => clearInterval(interval)
+  }, [expiresAt])
+
+  if (secondsLeft === null) return null
+  if (secondsLeft === 0) return '⏰ Expired'
+  const m = Math.floor(secondsLeft / 60)
+  const s = secondsLeft % 60
+  return `${m}m ${s.toString().padStart(2, '0')}s remaining`
+}
+
+// ── Sub-component: QR countdown display ──────────────────────────────────────
+function QRCountdown({ expiresAt }) {
+  const label = useCountdown(expiresAt)
+  if (!label) return null
+  const expired = label === '⏰ Expired'
+  return (
+    <div className={`qr-countdown ${expired ? 'expired' : ''}`}>
+      <span>⏱</span> {label}
+    </div>
+  )
+}
+
+// ── Main Component ────────────────────────────────────────────────────────────
 export default function ViewReportsPage() {
   const [reports, setReports] = useState([])
+  const [loading, setLoading] = useState(true)
   const [selectedReport, setSelectedReport] = useState(null)
-  const [newDescription, setNewDescription] = useState("")
-  const [qrData, setQrData] = useState(null) // { qrCode: base64, shareURL: string }
+  const [newDescription, setNewDescription] = useState('')
+  const [qrData, setQrData] = useState(null)
   const [loadingQR, setLoadingQR] = useState(false)
-  const [qrError, setQrError] = useState(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [copied, setCopied] = useState(false)
+  const { toasts, addToast } = useToast()
 
-  const fetchReports = async () => {
-    const res = await axios.get(`http://localhost:5000/api/reports/getReports/${userId}`)
-    setReports(res.data)
-  }
-
-  const deleteReport = async (fileName) => {
-    await axios.delete(`http://localhost:5000/api/reports/deleteReport/${userId}/${fileName}`)
-    setSelectedReport(null)
-    setQrData(null)
-    fetchReports()
-  }
-
-  const updateDescription = async () => {
-    await axios.put(`http://localhost:5000/api/reports/updateDescription/${userId}/${selectedReport.fileName}`, {
-      newDescription
-    })
-    setSelectedReport(null)
-    setQrData(null)
-    fetchReports()
-  }
-
-  // New function to generate QR share link for the selected report
-  const generateQR = async () => {
-    if (!selectedReport) return
-    setLoadingQR(true)
-    setQrError(null)
-    setQrData(null)
-
+  // ── Fetch reports ───────────────────────────────────────────────────────────
+  const fetchReports = useCallback(async () => {
     try {
-      setLoadingQR(true);
-const res = await axios.post(
-  `http://localhost:5000/api/reports/generate-share-link/${selectedReport.fileName}`,
-  { userId }   // <-- send userId in body
-);
-  setQrData(res.data);
-    } catch (error) {
-      setQrError("Failed to generate QR code. Please try again.")
+      setLoading(true)
+      const res = await api.get('/api/reports/getReports')
+      setReports(res.data)
+    } catch (err) {
+      addToast('Failed to load reports.', 'error')
+    } finally {
+      setLoading(false)
+    }
+  }, [addToast])
+
+  useEffect(() => { fetchReports() }, [fetchReports])
+
+  // ── Delete ──────────────────────────────────────────────────────────────────
+  const deleteReport = async () => {
+    if (!selectedReport) return
+    if (!window.confirm('Delete this report permanently?')) return
+    try {
+      await api.delete(`/api/reports/deleteReport/${selectedReport.fileName}`)
+      addToast('Report deleted.', 'success')
+      closeModal()
+      fetchReports()
+    } catch (err) {
+      addToast('Delete failed.', 'error')
+    }
+  }
+
+  // ── Update description ──────────────────────────────────────────────────────
+  const updateDescription = async () => {
+    try {
+      await api.put(`/api/reports/updateDescription/${selectedReport.fileName}`, {
+        newDescription
+      })
+      addToast('Description updated!', 'success')
+      closeModal()
+      fetchReports()
+    } catch (err) {
+      addToast('Update failed.', 'error')
+    }
+  }
+
+  // ── Generate QR ─────────────────────────────────────────────────────────────
+  const generateQR = async () => {
+    if (!selectedReport || loadingQR) return
+    setLoadingQR(true)
+    setQrData(null)
+    try {
+      const res = await api.post(
+        `/api/reports/generate-share-link/${selectedReport.fileName}`
+      )
+      setQrData(res.data)
+      addToast('QR code generated!', 'success')
+    } catch (err) {
+      addToast('Failed to generate QR code.', 'error')
     } finally {
       setLoadingQR(false)
     }
   }
 
-  useEffect(() => {
-    fetchReports()
-  }, [])
+  // ── Copy share URL ──────────────────────────────────────────────────────────
+  const copyLink = async () => {
+    if (!qrData?.shareURL) return
+    try {
+      await navigator.clipboard.writeText(qrData.shareURL)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      addToast('Copy failed — please copy manually.', 'error')
+    }
+  }
+
+  // ── Download QR as PNG ──────────────────────────────────────────────────────
+  const downloadQR = () => {
+    if (!qrData?.qrCode) return
+    const link = document.createElement('a')
+    link.href = qrData.qrCode
+    link.download = `medvault-qr-${selectedReport.fileName}.png`
+    link.click()
+  }
+
+  // ── Open / close modal ──────────────────────────────────────────────────────
+  const openModal = (report) => {
+    setSelectedReport(report)
+    setNewDescription(report.description || '')
+    setQrData(null)
+  }
+  const closeModal = () => {
+    setSelectedReport(null)
+    setQrData(null)
+  }
+
+  // ── Filter ──────────────────────────────────────────────────────────────────
+  const filtered = reports.filter(r =>
+    r.fileName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (r.description || '').toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  const isPdf = (url) => url?.toLowerCase().includes('.pdf') || url?.endsWith('/raw/upload')
 
   return (
-    <div className="reports-container">
-      <h1 className="page-title">📄 My Medical Reports</h1>
-
-      <div className="reports-grid">
-        {reports.map((report, index) => (
-          <div key={index} className="report-card">
-            <a href={report.fileUrl} target="_blank" rel="noopener noreferrer">
-              <img src={report.fileUrl} alt="Report" className="report-image" />
-            </a>
-
-            <p className="report-name">{report.fileName}</p>
-            <p className="report-date">{new Date(report.uploadedAt).toLocaleString()}</p>
-            <button
-              onClick={() => {
-                setSelectedReport(report)
-                setNewDescription(report.description)
-                setQrData(null)     // Reset QR data when switching report
-                setQrError(null)    // Reset QR error
-              }}
-              className="view-btn"
-            >
-              👁️ View Report
-            </button>
+    <div className="reports-page">
+      {/* ── Toasts ─────────────────────────────────────────────────────────── */}
+      <div className="toast-container">
+        {toasts.map(t => (
+          <div key={t.id} className={`toast toast-${t.type}`}>
+            {t.type === 'success' && '✅ '}
+            {t.type === 'error' && '❌ '}
+            {t.type === 'info' && 'ℹ️ '}
+            {t.message}
           </div>
         ))}
       </div>
 
-      {/* Modal */}
+      {/* ── Header ─────────────────────────────────────────────────────────── */}
+      <div className="reports-header">
+        <div>
+          <a href="/home" className="reports-back">← Dashboard</a>
+          <h1 className="reports-title">My Medical Reports</h1>
+          <p className="reports-subtitle">
+            {reports.length} record{reports.length !== 1 ? 's' : ''} stored securely
+          </p>
+        </div>
+        <a href="/upload" className="reports-upload-btn">+ Upload Report</a>
+      </div>
+
+      {/* ── Search ─────────────────────────────────────────────────────────── */}
+      <div className="reports-search-wrap">
+        <span className="search-icon">🔍</span>
+        <input
+          type="text"
+          placeholder="Search by name or description..."
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          className="reports-search"
+        />
+      </div>
+
+      {/* ── Grid ───────────────────────────────────────────────────────────── */}
+      {loading ? (
+        <div className="reports-loading">
+          <div className="spinner" style={{width:32, height:32, borderWidth:3}} />
+          <p>Loading reports...</p>
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="reports-empty">
+          <div className="empty-icon">📭</div>
+          <h3>{searchQuery ? 'No matches found' : 'No reports yet'}</h3>
+          <p>{searchQuery ? 'Try a different search term.' : 'Upload your first medical record to get started.'}</p>
+          {!searchQuery && <a href="/upload" className="reports-upload-btn">Upload Now</a>}
+        </div>
+      ) : (
+        <div className="reports-grid">
+          {filtered.map((report, index) => (
+            <div key={index} className="report-card glass">
+              {/* Thumbnail */}
+              <div className="report-thumb" onClick={() => openModal(report)}>
+                {isPdf(report.fileUrl) ? (
+                  <div className="report-pdf-icon">📄</div>
+                ) : (
+                  <img src={report.fileUrl} alt={report.fileName} className="report-img" />
+                )}
+                <div className="report-thumb-overlay">
+                  <span>View</span>
+                </div>
+              </div>
+
+              {/* Info */}
+              <div className="report-info">
+                <p className="report-name" title={report.fileName}>
+                  {report.fileName.split('_').slice(2).join('_') || report.fileName}
+                </p>
+                {report.description && (
+                  <p className="report-desc">{report.description}</p>
+                )}
+                <p className="report-date">
+                  🕒 {new Date(report.uploadedAt).toLocaleDateString('en-IN', {
+                    day: 'numeric', month: 'short', year: 'numeric'
+                  })}
+                </p>
+                <button className="report-view-btn" onClick={() => openModal(report)}>
+                  View Report
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── Modal ──────────────────────────────────────────────────────────── */}
       {selectedReport && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <span className="close-btn" onClick={() => setSelectedReport(null)}>✖️</span>
-            <a href={selectedReport.fileUrl} target="_blank" rel="noopener noreferrer">
-              <img src={selectedReport.fileUrl} alt="Full Report" className="modal-image" />
-            </a>
-            <p><b>Uploaded On:</b> {new Date(selectedReport.uploadedAt).toLocaleString()}</p>
-            <p><b>File Name:</b> {selectedReport.fileName}</p>
-            <p><b>Description:</b></p>
-            <input
-              type="text"
-              value={newDescription}
-              onChange={(e) => setNewDescription(e.target.value)}
-              className="description-input"
-            />
-            <div className="modal-buttons">
-              <button onClick={updateDescription} className="update-btn">✏️ Update Description</button>
-              <button onClick={() => deleteReport(selectedReport.fileName)} className="delete-btn">🗑️ Delete Report</button>
+        <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && closeModal()}>
+          <div className="modal-box glass">
+            <button className="modal-close" onClick={closeModal} aria-label="Close">✕</button>
+
+            {/* Report preview */}
+            <div className="modal-preview">
+              {isPdf(selectedReport.fileUrl) ? (
+                <div className="modal-pdf-thumb">📄 PDF Document</div>
+              ) : (
+                <img src={selectedReport.fileUrl} alt="Report" className="modal-img" />
+              )}
             </div>
 
-            {/* New QR Code Section */}
-            <hr style={{ margin: "20px 0" }} />
-            <h3>Share Report via QR Code</h3>
-            <button onClick={generateQR} disabled={loadingQR} className="qr-generate-btn">
-              {loadingQR ? "Generating QR..." : "Generate QR"}
-            </button>
-
-            {qrError && <p style={{ color: "red" }}>{qrError}</p>}
-
-            {qrData && (
-              <div style={{ marginTop: "15px" }}>
-                <img src={qrData.qrCode} alt="QR Code" style={{ width: "180px", height: "180px" }} />
-                <p>
-                  Share Link: <a href={qrData.shareURL} target="_blank" rel="noopener noreferrer">{qrData.shareURL}</a>
-                </p>
-                <p style={{ fontSize: "0.9em", color: "#666" }}>
-                  * Link will expire as per the configured time
-                </p>
+            {/* Meta */}
+            <div className="modal-meta">
+              <div className="modal-meta-row">
+                <span>📁 File</span>
+                <span>{selectedReport.fileName}</span>
               </div>
-            )}
+              <div className="modal-meta-row">
+                <span>📅 Uploaded</span>
+                <span>{new Date(selectedReport.uploadedAt).toLocaleString()}</span>
+              </div>
+            </div>
+
+            {/* Description edit */}
+            <div className="modal-section">
+              <label className="modal-label">Description</label>
+              <input
+                type="text"
+                value={newDescription}
+                onChange={e => setNewDescription(e.target.value)}
+                className="modal-input"
+                placeholder="Add a description..."
+              />
+            </div>
+
+            {/* Action buttons */}
+            <div className="modal-actions">
+              <button className="modal-btn modal-btn-update" onClick={updateDescription}>
+                ✏️ Save
+              </button>
+              <a href={selectedReport.fileUrl} target="_blank" rel="noopener noreferrer"
+                className="modal-btn modal-btn-view">
+                🔗 Open
+              </a>
+              <button className="modal-btn modal-btn-delete" onClick={deleteReport}>
+                🗑️ Delete
+              </button>
+            </div>
+
+            {/* QR Section */}
+            <div className="modal-qr-section">
+              <div className="modal-qr-header">
+                <div>
+                  <h3 className="modal-qr-title">Share via QR Code</h3>
+                  <p className="modal-qr-subtitle">Generate a secure, time-limited share link</p>
+                </div>
+                <button
+                  className="qr-generate-btn"
+                  onClick={generateQR}
+                  disabled={loadingQR}
+                >
+                  {loadingQR
+                    ? <><span className="spinner" /> Generating...</>
+                    : qrData ? '🔄 Regenerate' : '⚡ Generate QR'
+                  }
+                </button>
+              </div>
+
+              {qrData && (
+                <div className="qr-result">
+                  {/* QR Image */}
+                  <div className="qr-image-wrap">
+                    <img src={qrData.qrCode} alt="QR Code" className="qr-image" />
+                  </div>
+
+                  {/* Countdown */}
+                  <QRCountdown expiresAt={qrData.expiresAt} />
+
+                  {/* Share URL */}
+                  <div className="qr-url-wrap">
+                    <span className="qr-url-text">{qrData.shareURL}</span>
+                    <button
+                      className={`qr-copy-btn ${copied ? 'copied' : ''}`}
+                      onClick={copyLink}
+                    >
+                      {copied ? '✓ Copied!' : '📋 Copy'}
+                    </button>
+                  </div>
+
+                  {/* Download */}
+                  <button className="qr-download-btn" onClick={downloadQR}>
+                    ⬇️ Download QR Image
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
