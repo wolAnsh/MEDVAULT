@@ -5,6 +5,44 @@ import './medupload.css'
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf']
 const MAX_SIZE_MB = 10
 
+// ── Encryption Helpers ────────────────────────────────────────────────────────
+function bufToHex(buffer) {
+  return Array.from(new Uint8Array(buffer))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+async function encryptFile(file) {
+  // Generate random 256-bit AES-GCM key
+  const key = await window.crypto.subtle.generateKey(
+    { name: 'AES-GCM', length: 256 },
+    true,
+    ['encrypt', 'decrypt']
+  )
+
+  // Export key to raw bytes, then to hex for database storage
+  const exportedKey = await window.crypto.subtle.exportKey('raw', key)
+  const keyHex = bufToHex(exportedKey)
+
+  // Generate random 12-byte IV (Initialization Vector)
+  const iv = window.crypto.getRandomValues(new Uint8Array(12))
+
+  // Read file data
+  const fileBuffer = await file.arrayBuffer()
+
+  // Encrypt
+  const encryptedBuffer = await window.crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv },
+    key,
+    fileBuffer
+  )
+
+  // Prepend IV (12 bytes) to the encrypted data and package as binary Blob
+  const combinedBlob = new Blob([iv, encryptedBuffer], { type: 'application/octet-stream' })
+
+  return { keyHex, combinedBlob }
+}
+
 export default function UploadPage() {
   const [file, setFile] = useState(null)
   const [description, setDescription] = useState('')
@@ -62,13 +100,34 @@ export default function UploadPage() {
       const userId = user.id
       const uniqueId = Date.now()
       const filename = `${userId}_${uniqueId}`
+      const fileMimeType = file.type
+
+      // Step 1: Send the raw file to the backend for Gemini AI summarization first
+      setProgress(20)
+      let aiSummary = ''
+      try {
+        const aiFormData = new FormData()
+        aiFormData.append('file', file)
+        const aiRes = await api.post('/api/reports/analyze', aiFormData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        })
+        aiSummary = aiRes.data.summary
+      } catch (aiErr) {
+        console.warn('AI Analysis failed/skipped:', aiErr)
+        aiSummary = 'AI summary generation failed or API key not configured.'
+      }
+
+      // Step 2: Encrypt the file client-side (Zero Knowledge)
+      setProgress(40)
+      const { keyHex, combinedBlob } = await encryptFile(file)
+
+      // Step 3: Upload the encrypted blob to Cloudinary
       const formData = new FormData()
-      formData.append('file', file)
+      formData.append('file', combinedBlob, file.name)
       formData.append('upload_preset', 'MEDVAULT_reports')
       formData.append('folder', `user_${userId}`)
       formData.append('public_id', filename)
 
-      // Upload to Cloudinary with progress tracking
       const cloudName = process.env.REACT_APP_CLOUDINARY_CLOUD_NAME || 'dowslza4c'
       const cloudRes = await fetch(
         `https://api.cloudinary.com/v1_1/${cloudName}/upload`,
@@ -77,19 +136,22 @@ export default function UploadPage() {
           body: formData,
         }
       )
-      setProgress(60)
+      setProgress(70)
 
       if (!cloudRes.ok) throw new Error('Cloudinary upload failed.')
       const cloudData = await cloudRes.json()
       const uploadedUrl = cloudData.secure_url
 
-      setProgress(80)
+      setProgress(85)
 
-      // Save to backend
+      // Step 4: Save report metadata, encryption key, and AI summary to the backend
       await api.post('/api/reports/addReport', {
         fileUrl: uploadedUrl,
         fileName: filename,
         description: description.trim() || 'Medical Report',
+        fileType: fileMimeType,
+        encryptionKey: keyHex,
+        aiSummary: aiSummary
       })
 
       setProgress(100)

@@ -42,6 +42,13 @@ const AfterLoginDashboard = () => {
       href: "/profile",
       gradient: "linear-gradient(135deg, #10b981, #059669)",
     },
+    {
+      icon: "💓",
+      title: "Health Vitals",
+      desc: "Log and view your vital signs",
+      href: "/vitals",
+      gradient: "linear-gradient(135deg, #14b8a6, #0d9488)",
+    },
   ];
 
   const stats = [

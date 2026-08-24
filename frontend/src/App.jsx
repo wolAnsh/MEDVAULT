@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { GoogleOAuthProvider } from '@react-oauth/google';
 import { Navigation } from "./components/navigation";
 import { Header } from "./components/header";
 import { Features } from "./components/features";
@@ -10,7 +11,7 @@ import { Team } from "./components/Team";
 import { Contact } from "./components/contact";
 import JsonData from "./data/data.json";
 import SmoothScroll from "smooth-scroll";
-import SharedReport from './pages/SharedReport';
+import SharedReport from "./pages/SharedReport";
 import Login from "./components/login";
 import Signup from "./components/signup";
 import Home from "./components/home";
@@ -39,26 +40,29 @@ const LandingPage = ({ data }) => (
 
 const App = () => {
   const [landingPageData, setLandingPageData] = useState({});
+  const googleClientId = process.env.REACT_APP_GOOGLE_CLIENT_ID || "";
 
   useEffect(() => {
     setLandingPageData(JsonData);
   }, []);
 
   return (
-    <Router>
-      <Routes>
-        {/* Public routes */}
-        <Route path="/" element={<LandingPage data={landingPageData} />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/shared/:token" element={<SharedReport />} />
+    <GoogleOAuthProvider clientId={googleClientId}>
+      <Router>
+        <Routes>
+          {/* Public routes */}
+          <Route path="/" element={<LandingPage data={landingPageData} />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/shared/:token" element={<SharedReport />} />
 
-        {/* Protected routes — require valid JWT */}
-        <Route path="/home" element={<AuthGuard><Home /></AuthGuard>} />
-        <Route path="/upload" element={<AuthGuard><Medupload /></AuthGuard>} />
-        <Route path="/reports" element={<AuthGuard><ViewReports /></AuthGuard>} />
-      </Routes>
-    </Router>
+          {/* Protected routes — require valid JWT */}
+          <Route path="/home" element={<AuthGuard><Home /></AuthGuard>} />
+          <Route path="/upload" element={<AuthGuard><Medupload /></AuthGuard>} />
+          <Route path="/reports" element={<AuthGuard><ViewReports /></AuthGuard>} />
+        </Routes>
+      </Router>
+    </GoogleOAuthProvider>
   );
 };
 

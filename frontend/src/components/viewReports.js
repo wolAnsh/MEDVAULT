@@ -2,6 +2,39 @@ import { useEffect, useState, useCallback } from 'react'
 import api from '../api/config'
 import './viewReports.css'
 
+// ── Decryption Helpers ────────────────────────────────────────────────────────
+async function importKey(keyHex) {
+  const keyBytes = new Uint8Array(
+    keyHex.match(/.{1,2}/g).map(byte => parseInt(byte, 16))
+  )
+  return await window.crypto.subtle.importKey(
+    'raw',
+    keyBytes,
+    { name: 'AES-GCM' },
+    true,
+    ['decrypt']
+  )
+}
+
+async function decryptFileFromUrl(url, keyHex, mimeType) {
+  const res = await fetch(url)
+  if (!res.ok) throw new Error('Failed to fetch encrypted report file.')
+  const encryptedBuffer = await res.arrayBuffer()
+
+  const key = await importKey(keyHex)
+  const iv = new Uint8Array(encryptedBuffer, 0, 12)
+  const ciphertext = new Uint8Array(encryptedBuffer, 12)
+
+  const decryptedBuffer = await window.crypto.subtle.decrypt(
+    { name: 'AES-GCM', iv },
+    key,
+    ciphertext
+  )
+
+  const blob = new Blob([decryptedBuffer], { type: mimeType })
+  return URL.createObjectURL(blob)
+}
+
 // ── Toast helper ──────────────────────────────────────────────────────────────
 function useToast() {
   const [toasts, setToasts] = useState([])
@@ -57,6 +90,11 @@ export default function ViewReportsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [copied, setCopied] = useState(false)
   const { toasts, addToast } = useToast()
+
+  // Decryption states
+  const [decryptedUrl, setDecryptedUrl] = useState(null)
+  const [decrypting, setDecrypting] = useState(false)
+  const [decryptError, setDecryptError] = useState('')
 
   // ── Fetch reports ───────────────────────────────────────────────────────────
   const fetchReports = useCallback(async () => {
@@ -141,14 +179,36 @@ export default function ViewReportsPage() {
   }
 
   // ── Open / close modal ──────────────────────────────────────────────────────
-  const openModal = (report) => {
+  const openModal = async (report) => {
     setSelectedReport(report)
     setNewDescription(report.description || '')
     setQrData(null)
+    setDecryptError('')
+    setDecryptedUrl(null)
+
+    if (report.encryptionKey) {
+      setDecrypting(true)
+      try {
+        const decrypted = await decryptFileFromUrl(report.fileUrl, report.encryptionKey, report.fileType || 'image/jpeg')
+        setDecryptedUrl(decrypted)
+      } catch (err) {
+        console.error('Decryption error:', err)
+        setDecryptError('Failed to decrypt report locally. The key may be invalid.')
+      } finally {
+        setDecrypting(false)
+      }
+    } else {
+      setDecryptedUrl(report.fileUrl)
+    }
   }
+
   const closeModal = () => {
+    if (decryptedUrl && selectedReport?.encryptionKey) {
+      URL.revokeObjectURL(decryptedUrl)
+    }
     setSelectedReport(null)
     setQrData(null)
+    setDecryptedUrl(null)
   }
 
   // ── Filter ──────────────────────────────────────────────────────────────────
@@ -157,7 +217,7 @@ export default function ViewReportsPage() {
     (r.description || '').toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  const isPdf = (url) => url?.toLowerCase().includes('.pdf') || url?.endsWith('/raw/upload')
+  const isPdf = (url, report) => report?.fileType === 'application/pdf' || url?.toLowerCase().includes('.pdf') || url?.endsWith('/raw/upload')
 
   return (
     <div className="reports-page">
@@ -216,8 +276,17 @@ export default function ViewReportsPage() {
             <div key={index} className="report-card glass">
               {/* Thumbnail */}
               <div className="report-thumb" onClick={() => openModal(report)}>
-                {isPdf(report.fileUrl) ? (
+                {isPdf(report.fileUrl, report) ? (
                   <div className="report-pdf-icon">📄</div>
+                ) : report.encryptionKey ? (
+                  <div className="report-encrypted-icon" style={{
+                    fontSize: '28px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    height: '100%',
+                    background: 'rgba(255,255,255,0.03)'
+                  }}>🔒</div>
                 ) : (
                   <img src={report.fileUrl} alt={report.fileName} className="report-img" />
                 )}
@@ -256,10 +325,38 @@ export default function ViewReportsPage() {
 
             {/* Report preview */}
             <div className="modal-preview">
-              {isPdf(selectedReport.fileUrl) ? (
-                <div className="modal-pdf-thumb">📄 PDF Document</div>
+              {decrypting ? (
+                <div className="modal-loading" style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '40px 0',
+                  color: 'var(--color-text-muted)'
+                }}>
+                  <div className="spinner" style={{width:32, height:32, borderWidth:3}} />
+                  <p style={{marginTop: 12, fontSize: '14px'}}>Decrypting file locally...</p>
+                </div>
+              ) : decryptError ? (
+                <div className="modal-error" style={{
+                  padding: '30px',
+                  textAlign: 'center',
+                  color: '#fca5a5',
+                  background: 'rgba(239,68,68,0.1)',
+                  borderRadius: '8px'
+                }}>
+                  <span>⚠️</span> {decryptError}
+                </div>
               ) : (
-                <img src={selectedReport.fileUrl} alt="Report" className="modal-img" />
+                <>
+                  {isPdf(decryptedUrl || selectedReport.fileUrl, selectedReport) ? (
+                    <div className="modal-pdf-wrapper" style={{width: '100%', height: '400px'}}>
+                      <iframe src={decryptedUrl} title="PDF Viewer" style={{width:'100%', height:'100%', border:'none', borderRadius:'8px'}} />
+                    </div>
+                  ) : (
+                    <img src={decryptedUrl || selectedReport.fileUrl} alt="Report" className="modal-img" />
+                  )}
+                </>
               )}
             </div>
 
@@ -287,15 +384,51 @@ export default function ViewReportsPage() {
               />
             </div>
 
+            {/* AI Summary */}
+            {selectedReport.aiSummary && (
+              <div className="modal-section ai-summary-section" style={{
+                background: 'rgba(14, 165, 233, 0.08)',
+                padding: '16px',
+                borderRadius: '8px',
+                border: '1px solid rgba(14, 165, 233, 0.2)',
+                marginTop: '15px',
+                marginBottom: '15px'
+              }}>
+                <label className="modal-label" style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  color: '#0ea5e9',
+                  fontWeight: '700',
+                  marginBottom: '8px',
+                  fontSize: '13px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px'
+                }}>
+                  🤖 MedVault AI Summary
+                </label>
+                <div className="ai-summary-text" style={{
+                  fontSize: '13.5px',
+                  lineHeight: '1.6',
+                  color: 'var(--color-text)',
+                  whiteSpace: 'pre-line'
+                }}>
+                  {selectedReport.aiSummary}
+                </div>
+              </div>
+            )}
+
             {/* Action buttons */}
             <div className="modal-actions">
               <button className="modal-btn modal-btn-update" onClick={updateDescription}>
                 ✏️ Save
               </button>
-              <a href={selectedReport.fileUrl} target="_blank" rel="noopener noreferrer"
-                className="modal-btn modal-btn-view">
-                🔗 Open
-              </a>
+              {(decryptedUrl || !selectedReport.encryptionKey) && (
+                <a href={decryptedUrl || selectedReport.fileUrl} target="_blank" rel="noopener noreferrer"
+                  className="modal-btn modal-btn-view">
+                  🔗 Open
+                </a>
+              )}
               <button className="modal-btn modal-btn-delete" onClick={deleteReport}>
                 🗑️ Delete
               </button>

@@ -1,9 +1,11 @@
-// import mongoose from "mongoose"
 const mongoose = require("mongoose")
 const reportSchema = new mongoose.Schema({
   fileUrl: { type: String, required: true },
   fileName: String,
   description: String,
+  fileType: String,       // Store MIME type (e.g. application/pdf, image/png)
+  encryptionKey: String,  // Hex-encoded symmetric key for decryption
+  aiSummary: String,      // Gemini-generated analysis
   uploadedAt: { type: Date, default: Date.now }
 })
 

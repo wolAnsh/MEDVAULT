@@ -4,17 +4,82 @@ import axios from 'axios'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000'
 
+// ── Decryption Helpers ────────────────────────────────────────────────────────
+async function importKey(keyHex) {
+  const keyBytes = new Uint8Array(
+    keyHex.match(/.{1,2}/g).map(byte => parseInt(byte, 16))
+  )
+  return await window.crypto.subtle.importKey(
+    'raw',
+    keyBytes,
+    { name: 'AES-GCM' },
+    true,
+    ['decrypt']
+  )
+}
+
+async function decryptFileFromUrl(url, keyHex, mimeType) {
+  const res = await fetch(url)
+  if (!res.ok) throw new Error('Failed to fetch encrypted report file.')
+  const encryptedBuffer = await res.arrayBuffer()
+
+  const key = await importKey(keyHex)
+  const iv = new Uint8Array(encryptedBuffer, 0, 12)
+  const ciphertext = new Uint8Array(encryptedBuffer, 12)
+
+  const decryptedBuffer = await window.crypto.subtle.decrypt(
+    { name: 'AES-GCM', iv },
+    key,
+    ciphertext
+  )
+
+  const blob = new Blob([decryptedBuffer], { type: mimeType })
+  return URL.createObjectURL(blob)
+}
+
 function SharedReport() {
   const { token } = useParams()
   const [report, setReport] = useState(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
 
+  // Decryption states
+  const [decryptedUrl, setDecryptedUrl] = useState(null)
+  const [decrypting, setDecrypting] = useState(false)
+  const [decryptError, setDecryptError] = useState('')
+
   useEffect(() => {
     const fetchReport = async () => {
       try {
         const res = await axios.get(`${API_BASE}/api/reports/shared/${token}`)
-        setReport(res.data)
+        const reportData = res.data
+        setReport(reportData)
+
+        // Parse key from URL hash fragment (e.g. #key=xxxx)
+        const hash = window.location.hash
+        const params = new URLSearchParams(hash.substring(1))
+        const keyHex = params.get('key')
+
+        if (reportData.encryptionKey) {
+          if (!keyHex) {
+            setDecryptError('Decryption key missing. Shared links for E2EE reports require the key parameter in the URL hash.')
+            setLoading(false)
+            return
+          }
+          setDecrypting(true)
+          try {
+            const decrypted = await decryptFileFromUrl(reportData.fileUrl, keyHex, reportData.fileType || 'image/jpeg')
+            setDecryptedUrl(decrypted)
+          } catch (err) {
+            console.error('Decryption error:', err)
+            setDecryptError('Failed to decrypt the medical document locally. The link key might be incorrect.')
+          } finally {
+            setDecrypting(false)
+          }
+        } else {
+          // Legacy/unencrypted report
+          setDecryptedUrl(reportData.fileUrl)
+        }
       } catch (err) {
         setError(err.response?.data?.message || 'Unable to load this report.')
       } finally {
@@ -24,12 +89,11 @@ function SharedReport() {
     fetchReport()
   }, [token])
 
-  const isPdf = (url) => url?.toLowerCase().includes('.pdf')
+  const isPdf = (url, reportData) => reportData?.fileType === 'application/pdf' || url?.toLowerCase().includes('.pdf')
 
   // ── Deterrents ──────────────────────────────────────────────────────────────
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // Block PrintScreen, Ctrl+P (Print), Ctrl+S (Save), Ctrl+U (Source)
       if (
         e.key === 'PrintScreen' ||
         ((e.ctrlKey || e.metaKey) && (e.key === 'p' || e.key === 's' || e.key === 'u'))
@@ -84,20 +148,34 @@ function SharedReport() {
 
         {/* Report preview with security overlay */}
         <div style={styles.previewContainer}>
-          {isPdf(report.fileUrl) ? (
-            <div style={styles.pdfEmbed}>
-              <iframe
-                src={`${report.fileUrl}#toolbar=0&navpanes=0&scrollbar=0`}
-                title="Medical Report"
-                style={styles.pdfFrame}
-              />
+          {decrypting ? (
+            <div style={{ padding: '40px', color: '#94a3b8', textAlign: 'center' }}>
+              <div style={styles.spinner} />
+              <p>Decrypting secure medical document...</p>
+            </div>
+          ) : decryptError ? (
+            <div style={{ padding: '40px', color: '#fca5a5', textAlign: 'center' }}>
+              <span style={{ fontSize: '24px' }}>⚠️</span>
+              <p style={{ marginTop: '10px' }}>{decryptError}</p>
             </div>
           ) : (
-            <div style={styles.imageWrap}>
-              <img src={report.fileUrl} alt="Medical Report" style={styles.image} />
-              {/* Transparent overlay to prevent "Save Image As" via drag/click */}
-              <div style={styles.securityOverlay} />
-            </div>
+            <>
+              {isPdf(decryptedUrl || report.fileUrl, report) ? (
+                <div style={styles.pdfEmbed}>
+                  <iframe
+                    src={`${decryptedUrl}#toolbar=0&navpanes=0&scrollbar=0`}
+                    title="Medical Report"
+                    style={styles.pdfFrame}
+                  />
+                </div>
+              ) : (
+                <div style={styles.imageWrap}>
+                  <img src={decryptedUrl} alt="Medical Report" style={styles.image} />
+                  {/* Transparent overlay to prevent "Save Image As" via drag/click */}
+                  <div style={styles.securityOverlay} />
+                </div>
+              )}
+            </>
           )}
           <div style={styles.watermark}>PROTECTED DOCUMENT • DO NOT SHARE</div>
         </div>
@@ -119,6 +197,39 @@ function SharedReport() {
             </span>
           </div>
         </div>
+
+        {/* AI Summary */}
+        {report.aiSummary && (
+          <div style={{
+            background: 'rgba(14, 165, 233, 0.08)',
+            padding: '16px',
+            borderRadius: '12px',
+            border: '1px solid rgba(14, 165, 233, 0.2)',
+            marginTop: '10px',
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              color: '#0ea5e9',
+              fontWeight: '700',
+              marginBottom: '8px',
+              fontSize: '13px',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px'
+            }}>
+              🤖 MedVault AI Summary
+            </div>
+            <div style={{
+              fontSize: '13.5px',
+              lineHeight: '1.6',
+              color: '#e2e8f0',
+              whiteSpace: 'pre-line'
+            }}>
+              {report.aiSummary}
+            </div>
+          </div>
+        )}
 
         {/* Security Notice */}
         <div style={styles.notice}>

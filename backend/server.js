@@ -5,6 +5,7 @@ const cors = require('cors')
 const rateLimit = require('express-rate-limit')
 const reportRoutes = require('./routes/reportRoutes')
 const authRoutes = require('./routes/authRoutes')
+const vitalsRoutes = require('./routes/vitalsRoutes')
 
 dotenv.config()
 
@@ -50,6 +51,7 @@ const qrLimiter = rateLimit({
 app.use('/auth', authLimiter, authRoutes)
 app.use('/api/reports', reportRoutes)
 app.use('/api/reports/generate-share-link', qrLimiter)
+app.use('/api/vitals', vitalsRoutes)
 
 // ── Health Check ──────────────────────────────────────────────────────────────
 app.get('/health', (req, res) => {

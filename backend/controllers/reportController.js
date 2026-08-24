@@ -36,7 +36,8 @@ const generateShareLink = async (req, res) => {
     }
 
     const frontendBase = process.env.FRONTEND_URL || 'http://localhost:3000'
-    const shareURL = `${frontendBase}/shared/${token}`
+    const keyFragment = report.encryptionKey ? `#key=${report.encryptionKey}` : ''
+    const shareURL = `${frontendBase}/shared/${token}${keyFragment}`
     const qrCode = await generateQRCode(shareURL)
 
     res.json({ qrCode, shareURL, expiresAt })

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { GoogleLogin } from '@react-oauth/google';
 import api from "../api/config";
 import "./Auth.css";
 
@@ -27,6 +28,26 @@ const Login = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    setLoading(true);
+    setError("");
+    try {
+      const response = await api.post("/auth/google", {
+        token: credentialResponse.credential
+      });
+      localStorage.setItem("token", response.data.token);
+      navigate("/home");
+    } catch (err) {
+      setError(err.response?.data?.message || "Google sign-in failed.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleError = () => {
+    setError("Google sign-in failed. Please try again.");
   };
 
   return (
@@ -84,6 +105,18 @@ const Login = () => {
             {loading ? <span className="spinner" /> : "Sign In"}
           </button>
         </form>
+
+        <div className="auth-divider">
+          <span>or sign in with</span>
+        </div>
+
+        <div className="google-btn-wrapper">
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={handleGoogleError}
+            useOneTap
+          />
+        </div>
 
         <p className="auth-switch">
           Don't have an account?{" "}
