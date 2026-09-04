@@ -74,7 +74,34 @@ router.delete('/deleteReport/:fileName', deleteReport)
 // ── Update Description ────────────────────────────────────────────────────────
 router.put('/updateDescription/:fileName', updateDescription)
 
-// ── Gemini AI Report Analysis ──────────────────────────────────────────────────
+// ── Update AI Summary ─────────────────────────────────────────────────────────
+router.put('/updateAiSummary/:fileName', async (req, res) => {
+  try {
+    const userId = req.user.id
+    const { fileName } = req.params
+    const { aiSummary } = req.body
+
+    const result = await UserReports.updateOne(
+      { userId, "reports.fileName": fileName },
+      { $set: { "reports.$.aiSummary": aiSummary } }
+    )
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ message: 'Report not found for this user.' })
+    }
+
+    res.json({ message: 'AI summary saved to database successfully!', aiSummary })
+  } catch (error) {
+    console.error('Save AI summary error:', error)
+    res.status(500).json({ message: error.message })
+  }
+})
+
+
+const Vitals = require('../models/Vitals')
+const jwt = require('jsonwebtoken')
+
+// ── Gemini AI Report Analysis & Automatic Vitals Extraction ───────────────────
 router.post('/analyze', upload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
@@ -87,7 +114,6 @@ router.post('/analyze', upload.single('file'), async (req, res) => {
 
     const { GoogleGenerativeAI } = require("@google/generative-ai")
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
-    const model = genAI.getGenerativeModel({ model: "gemini-3.6-flash" })
 
     const filePart = {
       inlineData: {
@@ -96,23 +122,107 @@ router.post('/analyze', upload.single('file'), async (req, res) => {
       }
     }
 
-    const prompt = `Analyze this medical report document (it might be an image of a report, a prescription, a scan result, or a PDF).
-Provide a professional, concise, and structured summary of the report.
-Include:
-1. Patient Details (if visible)
-2. Primary Observations & Clinical Findings
-3. Key Vitals / Lab Values (if any, with reference ranges)
-4. Diagnoses & Recommendations
-If the document is handwritten, transcribe the handwritten text clearly first.
-Keep the summary concise, readable, and structured using clean headings.`
+    const summaryPrompt = `Analyze this medical report document.
+Provide a clean, direct, and concise summary of the key findings.
 
-    const result = await model.generateContent([prompt, filePart])
-    const summary = result.response.text()
+Strict Rules:
+- Keep it extremely concise and straight to the point.
+- DO NOT use markdown bolding (**), asterisks (*), hashtags (#), horizontal dividers (---), or complex markdown tables. Use clean plain text only.
+- Focus ONLY on:
+  1. Primary abnormal lab values or vitals (with values, reference range, and high/low status).
+  2. Main medical impression / diagnosis.
+  3. Key recommendations / next steps.
+- Do not repeat patient demographic metadata or unnecessary report header info.`
 
-    res.json({ summary })
+    const vitalsPrompt = `Extract any vital signs or telemetry data present in this medical report document.
+Return ONLY a valid JSON object in the exact format:
+{
+  "systolic": number or null,
+  "diastolic": number or null,
+  "heartRate": number or null,
+  "temperature": number or null,
+  "spO2": number or null
+}
+Rules:
+- If Blood Pressure is e.g. 120/80, set systolic=120, diastolic=80.
+- Output raw JSON object only. No markdown, no triple backticks.`
+
+    const modelCandidates = [
+      "gemini-3.7-flash"
+    ]
+
+    let summary = null
+    let lastError = null
+    let extractedVitals = null
+
+    for (const modelName of modelCandidates) {
+      try {
+        const model = genAI.getGenerativeModel({ model: modelName }, { apiVersion: "v1" })
+        const result = await model.generateContent([summaryPrompt, filePart])
+        summary = result.response.text()
+        if (summary) {
+          summary = summary.replace(/\*{1,2}/g, '').replace(/#{1,6}\s?/g, '').trim()
+
+          // Attempt Vitals Extraction
+          try {
+            const vitalsResult = await model.generateContent([vitalsPrompt, filePart])
+            let rawVitalsText = vitalsResult.response.text().trim()
+            rawVitalsText = rawVitalsText.replace(/```json/gi, '').replace(/```/g, '').trim()
+            const parsed = JSON.parse(rawVitalsText)
+            if (parsed && (parsed.systolic || parsed.heartRate || parsed.temperature || parsed.spO2)) {
+              extractedVitals = parsed
+            }
+          } catch (vErr) {
+            console.warn('Vitals extraction parse warning:', vErr.message)
+          }
+
+          break
+        }
+      } catch (err) {
+        console.warn(`Gemini model ${modelName} attempt failed:`, err.message)
+        lastError = err
+      }
+    }
+
+    if (!summary) {
+      throw lastError || new Error("Gemini API call failed.")
+    }
+
+    let vitalsSaved = false
+    // If authorization header is present and vitals were extracted, auto-save to Vitals collection
+    if (extractedVitals && req.headers.authorization) {
+      try {
+        const token = req.headers.authorization.split(' ')[1]
+        const decoded = jwt.verify(token, process.env.JWT_SECRET)
+        if (decoded && decoded.id) {
+          const newVital = new Vitals({
+            userId: decoded.id,
+            bloodPressure: {
+              systolic: extractedVitals.systolic ? Number(extractedVitals.systolic) : undefined,
+              diastolic: extractedVitals.diastolic ? Number(extractedVitals.diastolic) : undefined
+            },
+            heartRate: extractedVitals.heartRate ? Number(extractedVitals.heartRate) : undefined,
+            temperature: extractedVitals.temperature ? Number(extractedVitals.temperature) : undefined,
+            spO2: extractedVitals.spO2 ? Number(extractedVitals.spO2) : undefined,
+            recordedAt: new Date()
+          })
+          await newVital.save()
+          vitalsSaved = true
+          console.log('✅ Auto-extracted and saved vitals from report for user:', decoded.id)
+        }
+      } catch (authErr) {
+        console.warn('Vitals save authorization skip:', authErr.message)
+      }
+    }
+
+    res.json({
+      summary,
+      extractedVitals,
+      vitalsSaved
+    })
   } catch (error) {
     console.error('Gemini analysis error:', error)
-    res.status(500).json({ message: 'AI Analysis failed: ' + error.message })
+    res.status(500).json({ message: error.message })
   }
 })
 

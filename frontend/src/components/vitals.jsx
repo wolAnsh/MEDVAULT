@@ -1,14 +1,23 @@
 import React, { useState, useEffect } from 'react'
-import api from '../api/config'
+import { useNavigate, Link } from 'react-router-dom'
+import api, { getCurrentUser } from '../api/config'
 import './vitals.css'
 
 export default function VitalsTracker() {
+  const navigate = useNavigate()
+  const user = getCurrentUser()
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [vitals, setVitals] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [activeTab, setActiveTab] = useState('heartRate') // heartRate, bloodPressure, spO2, temperature
   const [hoveredPoint, setHoveredPoint] = useState(null) // { x, y, value, date }
+
+  const handleLogout = () => {
+    localStorage.removeItem("token")
+    navigate("/login")
+  }
 
   // Form State
   const [form, setForm] = useState({
@@ -268,124 +277,167 @@ export default function VitalsTracker() {
   }
 
   return (
-    <div className="vitals-container glass">
-      <div className="vitals-header">
-        <h2 className="section-title">🩺 Health Vitals Tracker</h2>
-        <span className="vitals-subtitle">E2EE-linked medical telemetry logging</span>
-      </div>
-
-      {error && <div className="vitals-alert error">⚠️ {error}</div>}
-      {success && <div className="vitals-alert success">✅ {success}</div>}
-
-      {/* Grid: Left side Cards, Right side Chart */}
-      <div className="vitals-grid">
-        <div className="vitals-cards">
-          {/* Card: Heart Rate */}
-          <div className="vital-card glass" onClick={() => setActiveTab('heartRate')}>
-            <div className="vital-card-header">
-              <span className="vital-icon">❤️</span>
-              <span className={`vital-status ${getStatus('heartRate', latest?.heartRate).class}`}>
-                {getStatus('heartRate', latest?.heartRate).label}
-              </span>
-            </div>
-            <div className="vital-value">
-              {latest ? `${latest.heartRate}` : '--'} <span className="vital-unit">bpm</span>
-            </div>
-            <div className="vital-label">Heart Rate</div>
-          </div>
-
-          {/* Card: BP */}
-          <div className="vital-card glass" onClick={() => setActiveTab('bloodPressure')}>
-            <div className="vital-card-header">
-              <span className="vital-icon">🩸</span>
-              <span className={`vital-status ${getStatus('bloodPressure', latest?.bloodPressure?.systolic, latest?.bloodPressure?.diastolic).class}`}>
-                {getStatus('bloodPressure', latest?.bloodPressure?.systolic, latest?.bloodPressure?.diastolic).label}
-              </span>
-            </div>
-            <div className="vital-value">
-              {latest ? `${latest.bloodPressure?.systolic}/${latest.bloodPressure?.diastolic}` : '--/--'} <span className="vital-unit">mmHg</span>
-            </div>
-            <div className="vital-label">Blood Pressure</div>
-          </div>
-
-          {/* Card: SpO2 */}
-          <div className="vital-card glass" onClick={() => setActiveTab('spO2')}>
-            <div className="vital-card-header">
-              <span className="vital-icon">🫁</span>
-              <span className={`vital-status ${getStatus('spO2', latest?.spO2).class}`}>
-                {getStatus('spO2', latest?.spO2).label}
-              </span>
-            </div>
-            <div className="vital-value">
-              {latest ? `${latest.spO2}` : '--'} <span className="vital-unit">%</span>
-            </div>
-            <div className="vital-label">Oxygen Levels (SpO2)</div>
-          </div>
-
-          {/* Card: Temperature */}
-          <div className="vital-card glass" onClick={() => setActiveTab('temperature')}>
-            <div className="vital-card-header">
-              <span className="vital-icon">🌡️</span>
-              <span className={`vital-status ${getStatus('temperature', latest?.temperature).class}`}>
-                {getStatus('temperature', latest?.temperature).label}
-              </span>
-            </div>
-            <div className="vital-value">
-              {latest ? `${latest.temperature}` : '--'} <span className="vital-unit">°C</span>
-            </div>
-            <div className="vital-label">Temperature</div>
-          </div>
+    <div className="dashboard-root">
+      {/* Sidebar */}
+      <aside className={`dashboard-sidebar glass ${sidebarOpen ? "open" : ""}`}>
+        <div className="sidebar-logo">
+          <span>🏥</span>
+          <span>MedVault</span>
         </div>
+        <nav className="sidebar-nav">
+          <Link to="/home" className="sidebar-link">🏠 Dashboard</Link>
+          <Link to="/reports" className="sidebar-link">📄 My Reports</Link>
+          <Link to="/upload" className="sidebar-link">📤 Upload</Link>
+          <Link to="/vitals" className="sidebar-link active">💓 Health Vitals</Link>
+          <Link to="/profile" className="sidebar-link">👤 Profile</Link>
+        </nav>
+        <button className="sidebar-logout" onClick={handleLogout}>
+          🚪 Logout
+        </button>
+      </aside>
 
-        {/* Analytics Chart Block */}
-        <div className="vitals-chart-section glass">
-          <div className="chart-header">
-            <h3>Trend Analysis</h3>
-            <div className="chart-tabs">
-              <button className={`chart-tab-btn ${activeTab === 'heartRate' ? 'active' : ''}`} onClick={() => setActiveTab('heartRate')}>Pulse</button>
-              <button className={`chart-tab-btn ${activeTab === 'bloodPressure' ? 'active' : ''}`} onClick={() => setActiveTab('bloodPressure')}>BP</button>
-              <button className={`chart-tab-btn ${activeTab === 'spO2' ? 'active' : ''}`} onClick={() => setActiveTab('spO2')}>SpO2</button>
-              <button className={`chart-tab-btn ${activeTab === 'temperature' ? 'active' : ''}`} onClick={() => setActiveTab('temperature')}>Temp</button>
+      {sidebarOpen && (
+        <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />
+      )}
+
+      {/* Main Content Area */}
+      <div className="dashboard-main">
+        <header className="dashboard-topbar glass">
+          <button className="hamburger" onClick={() => setSidebarOpen(!sidebarOpen)}>
+            ☰
+          </button>
+          <div className="topbar-greeting">
+            <span className="greeting-text">
+              Health Vitals & Telemetry Log
+            </span>
+          </div>
+          <div className="topbar-avatar">
+            {(user?.username || "U")[0].toUpperCase()}
+          </div>
+        </header>
+
+        <main className="dashboard-content">
+          <div className="vitals-container glass">
+            <div className="vitals-header">
+              <h2 className="section-title">🩺 Health Vitals Tracker</h2>
+              <span className="vitals-subtitle">E2EE-linked medical telemetry logging</span>
+            </div>
+
+            {error && <div className="vitals-alert error">⚠️ {error}</div>}
+            {success && <div className="vitals-alert success">✅ {success}</div>}
+
+            {/* Grid: Left side Cards, Right side Chart */}
+            <div className="vitals-grid">
+              <div className="vitals-cards">
+                {/* Card: Heart Rate */}
+                <div className="vital-card glass" onClick={() => setActiveTab('heartRate')}>
+                  <div className="vital-card-header">
+                    <span className="vital-icon">❤️</span>
+                    <span className={`vital-status ${getStatus('heartRate', latest?.heartRate).class}`}>
+                      {getStatus('heartRate', latest?.heartRate).label}
+                    </span>
+                  </div>
+                  <div className="vital-value">
+                    {latest ? `${latest.heartRate}` : '--'} <span className="vital-unit">bpm</span>
+                  </div>
+                  <div className="vital-label">Heart Rate</div>
+                </div>
+
+                {/* Card: BP */}
+                <div className="vital-card glass" onClick={() => setActiveTab('bloodPressure')}>
+                  <div className="vital-card-header">
+                    <span className="vital-icon">🩸</span>
+                    <span className={`vital-status ${getStatus('bloodPressure', latest?.bloodPressure?.systolic, latest?.bloodPressure?.diastolic).class}`}>
+                      {getStatus('bloodPressure', latest?.bloodPressure?.systolic, latest?.bloodPressure?.diastolic).label}
+                    </span>
+                  </div>
+                  <div className="vital-value">
+                    {latest ? `${latest.bloodPressure?.systolic}/${latest.bloodPressure?.diastolic}` : '--/--'} <span className="vital-unit">mmHg</span>
+                  </div>
+                  <div className="vital-label">Blood Pressure</div>
+                </div>
+
+                {/* Card: SpO2 */}
+                <div className="vital-card glass" onClick={() => setActiveTab('spO2')}>
+                  <div className="vital-card-header">
+                    <span className="vital-icon">🫁</span>
+                    <span className={`vital-status ${getStatus('spO2', latest?.spO2).class}`}>
+                      {getStatus('spO2', latest?.spO2).label}
+                    </span>
+                  </div>
+                  <div className="vital-value">
+                    {latest ? `${latest.spO2}` : '--'} <span className="vital-unit">%</span>
+                  </div>
+                  <div className="vital-label">Oxygen Levels (SpO2)</div>
+                </div>
+
+                {/* Card: Temperature */}
+                <div className="vital-card glass" onClick={() => setActiveTab('temperature')}>
+                  <div className="vital-card-header">
+                    <span className="vital-icon">🌡️</span>
+                    <span className={`vital-status ${getStatus('temperature', latest?.temperature).class}`}>
+                      {getStatus('temperature', latest?.temperature).label}
+                    </span>
+                  </div>
+                  <div className="vital-value">
+                    {latest ? `${latest.temperature}` : '--'} <span className="vital-unit">°C</span>
+                  </div>
+                  <div className="vital-label">Temperature</div>
+                </div>
+              </div>
+
+              {/* Analytics Chart Block */}
+              <div className="vitals-chart-section glass">
+                <div className="chart-header">
+                  <h3>Trend Analysis</h3>
+                  <div className="chart-tabs">
+                    <button className={`chart-tab-btn ${activeTab === 'heartRate' ? 'active' : ''}`} onClick={() => setActiveTab('heartRate')}>Pulse</button>
+                    <button className={`chart-tab-btn ${activeTab === 'bloodPressure' ? 'active' : ''}`} onClick={() => setActiveTab('bloodPressure')}>BP</button>
+                    <button className={`chart-tab-btn ${activeTab === 'spO2' ? 'active' : ''}`} onClick={() => setActiveTab('spO2')}>SpO2</button>
+                    <button className={`chart-tab-btn ${activeTab === 'temperature' ? 'active' : ''}`} onClick={() => setActiveTab('temperature')}>Temp</button>
+                  </div>
+                </div>
+                {loading ? (
+                  <div className="chart-loading">
+                    <div className="spinner" />
+                  </div>
+                ) : (
+                  renderChart()
+                )}
+              </div>
+            </div>
+
+            {/* Form Log Section */}
+            <div className="vitals-log-form glass">
+              <h3>Log New Vitals</h3>
+              <form onSubmit={handleSubmit} className="vitals-form">
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Systolic BP (mmHg)</label>
+                    <input type="number" name="systolic" placeholder="e.g. 120" value={form.systolic} onChange={handleChange} required />
+                  </div>
+                  <div className="form-group">
+                    <label>Diastolic BP (mmHg)</label>
+                    <input type="number" name="diastolic" placeholder="e.g. 80" value={form.diastolic} onChange={handleChange} required />
+                  </div>
+                  <div className="form-group">
+                    <label>Heart Rate (bpm)</label>
+                    <input type="number" name="heartRate" placeholder="e.g. 72" value={form.heartRate} onChange={handleChange} required />
+                  </div>
+                  <div className="form-group">
+                    <label>SpO2 (%)</label>
+                    <input type="number" name="spO2" placeholder="e.g. 98" value={form.spO2} onChange={handleChange} required />
+                  </div>
+                  <div className="form-group">
+                    <label>Body Temp (°C)</label>
+                    <input type="number" step="0.1" name="temperature" placeholder="e.g. 36.8" value={form.temperature} onChange={handleChange} required />
+                  </div>
+                </div>
+                <button type="submit" className="vitals-submit-btn">Save Vitals Log</button>
+              </form>
             </div>
           </div>
-          {loading ? (
-            <div className="chart-loading">
-              <div className="spinner" />
-            </div>
-          ) : (
-            renderChart()
-          )}
-        </div>
-      </div>
-
-      {/* Form Log Section */}
-      <div className="vitals-log-form glass">
-        <h3>Log New Vitals</h3>
-        <form onSubmit={handleSubmit} className="vitals-form">
-          <div className="form-row">
-            <div className="form-group">
-              <label>Systolic BP (mmHg)</label>
-              <input type="number" name="systolic" placeholder="e.g. 120" value={form.systolic} onChange={handleChange} required />
-            </div>
-            <div className="form-group">
-              <label>Diastolic BP (mmHg)</label>
-              <input type="number" name="diastolic" placeholder="e.g. 80" value={form.diastolic} onChange={handleChange} required />
-            </div>
-            <div className="form-group">
-              <label>Heart Rate (bpm)</label>
-              <input type="number" name="heartRate" placeholder="e.g. 72" value={form.heartRate} onChange={handleChange} required />
-            </div>
-            <div className="form-group">
-              <label>SpO2 (%)</label>
-              <input type="number" name="spO2" placeholder="e.g. 98" value={form.spO2} onChange={handleChange} required />
-            </div>
-            <div className="form-group">
-              <label>Body Temp (°C)</label>
-              <input type="number" step="0.1" name="temperature" placeholder="e.g. 36.8" value={form.temperature} onChange={handleChange} required />
-            </div>
-          </div>
-          <button type="submit" className="vitals-submit-btn">Save Vitals Log</button>
-        </form>
+        </main>
       </div>
     </div>
   )

@@ -91,10 +91,54 @@ export default function ViewReportsPage() {
   const [copied, setCopied] = useState(false)
   const { toasts, addToast } = useToast()
 
-  // Decryption states
+  // Decryption & AI states
   const [decryptedUrl, setDecryptedUrl] = useState(null)
   const [decrypting, setDecrypting] = useState(false)
   const [decryptError, setDecryptError] = useState('')
+  const [generatingAI, setGeneratingAI] = useState(false)
+
+  // ── Generate / Regenerate AI Summary ────────────────────────────────────────
+  const handleGenerateAISummary = async () => {
+    if (!selectedReport || generatingAI) return
+    setGeneratingAI(true)
+    try {
+      const fileToFetch = decryptedUrl || selectedReport.fileUrl
+      const res = await fetch(fileToFetch)
+      if (!res.ok) throw new Error('Could not fetch report file for AI analysis.')
+      const blob = await res.blob()
+
+      const aiFormData = new FormData()
+      const mimeType = selectedReport.fileType || blob.type || 'image/jpeg'
+      const ext = mimeType === 'application/pdf' ? 'pdf' : 'jpg'
+      aiFormData.append('file', blob, `report.${ext}`)
+
+      const aiRes = await api.post('/api/reports/analyze', aiFormData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+
+      const newSummary = aiRes.data.summary
+      const vitalsSaved = aiRes.data.vitalsSaved
+
+      await api.put(`/api/reports/updateAiSummary/${selectedReport.fileName}`, {
+        aiSummary: newSummary
+      })
+
+      setSelectedReport(prev => ({ ...prev, aiSummary: newSummary }))
+      setReports(prev => prev.map(r => r.fileName === selectedReport.fileName ? { ...r, aiSummary: newSummary } : r))
+      
+      if (vitalsSaved) {
+        addToast('✨ AI Summary generated & vitals auto-logged to your Health Vitals Tracker!', 'success')
+      } else {
+        addToast('AI Summary generated successfully!', 'success')
+      }
+    } catch (err) {
+      console.error('AI summary error:', err)
+      const errMsg = err.response?.data?.message || err.message || 'AI summary generation failed.'
+      addToast(errMsg, 'error')
+    } finally {
+      setGeneratingAI(false)
+    }
+  }
 
   // ── Fetch reports ───────────────────────────────────────────────────────────
   const fetchReports = useCallback(async () => {
@@ -384,29 +428,59 @@ export default function ViewReportsPage() {
               />
             </div>
 
-            {/* AI Summary */}
-            {selectedReport.aiSummary && (
-              <div className="modal-section ai-summary-section" style={{
-                background: 'rgba(14, 165, 233, 0.08)',
-                padding: '16px',
-                borderRadius: '8px',
-                border: '1px solid rgba(14, 165, 233, 0.2)',
-                marginTop: '15px',
-                marginBottom: '15px'
-              }}>
+            {/* AI Summary Section */}
+            <div className="modal-section ai-summary-section" style={{
+              background: 'rgba(14, 165, 233, 0.08)',
+              padding: '16px',
+              borderRadius: '10px',
+              border: '1px solid rgba(14, 165, 233, 0.25)',
+              marginTop: '15px',
+              marginBottom: '15px'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
                 <label className="modal-label" style={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: '6px',
                   color: '#0ea5e9',
                   fontWeight: '700',
-                  marginBottom: '8px',
+                  margin: 0,
                   fontSize: '13px',
                   textTransform: 'uppercase',
                   letterSpacing: '0.5px'
                 }}>
                   🤖 MedVault AI Summary
                 </label>
+                <button
+                  onClick={handleGenerateAISummary}
+                  disabled={generatingAI || decrypting}
+                  style={{
+                    background: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '6px',
+                    padding: '6px 14px',
+                    fontSize: '12.5px',
+                    fontWeight: '600',
+                    cursor: generatingAI || decrypting ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    boxShadow: '0 2px 8px rgba(14, 165, 233, 0.3)',
+                    opacity: generatingAI || decrypting ? 0.7 : 1
+                  }}
+                >
+                  {generatingAI ? (
+                    <><span className="spinner" style={{ width: 14, height: 14, borderWidth: 2 }} /> Analyzing...</>
+                  ) : selectedReport.aiSummary ? (
+                    '🔄 Regenerate'
+                  ) : (
+                    '✨ Generate AI Summary'
+                  )}
+                </button>
+              </div>
+
+              {selectedReport.aiSummary ? (
                 <div className="ai-summary-text" style={{
                   fontSize: '13.5px',
                   lineHeight: '1.6',
@@ -415,8 +489,12 @@ export default function ViewReportsPage() {
                 }}>
                   {selectedReport.aiSummary}
                 </div>
-              </div>
-            )}
+              ) : (
+                <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)', margin: 0 }}>
+                  No AI summary generated yet. Click "Generate AI Summary" above to analyze this report using Gemini AI.
+                </p>
+              )}
+            </div>
 
             {/* Action buttons */}
             <div className="modal-actions">

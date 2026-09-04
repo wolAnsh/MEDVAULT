@@ -69,6 +69,8 @@ const AfterLoginDashboard = () => {
           <Link to="/home" className="sidebar-link active">🏠 Dashboard</Link>
           <Link to="/reports" className="sidebar-link">📄 My Reports</Link>
           <Link to="/upload" className="sidebar-link">📤 Upload</Link>
+          <Link to="/vitals" className="sidebar-link">💓 Health Vitals</Link>
+          <Link to="/profile" className="sidebar-link">👤 Profile</Link>
         </nav>
         <button className="sidebar-logout" onClick={handleLogout}>
           🚪 Logout

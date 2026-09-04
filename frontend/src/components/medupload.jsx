@@ -102,22 +102,7 @@ export default function UploadPage() {
       const filename = `${userId}_${uniqueId}`
       const fileMimeType = file.type
 
-      // Step 1: Send the raw file to the backend for Gemini AI summarization first
-      setProgress(20)
-      let aiSummary = ''
-      try {
-        const aiFormData = new FormData()
-        aiFormData.append('file', file)
-        const aiRes = await api.post('/api/reports/analyze', aiFormData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        })
-        aiSummary = aiRes.data.summary
-      } catch (aiErr) {
-        console.warn('AI Analysis failed/skipped:', aiErr)
-        aiSummary = 'AI summary generation failed or API key not configured.'
-      }
-
-      // Step 2: Encrypt the file client-side (Zero Knowledge)
+      // Step 1: Encrypt the file client-side (Zero Knowledge)
       setProgress(40)
       const { keyHex, combinedBlob } = await encryptFile(file)
 
@@ -130,7 +115,7 @@ export default function UploadPage() {
 
       const cloudName = process.env.REACT_APP_CLOUDINARY_CLOUD_NAME || 'dowslza4c'
       const cloudRes = await fetch(
-        `https://api.cloudinary.com/v1_1/${cloudName}/upload`,
+        `https://api.cloudinary.com/v1_1/${cloudName}/raw/upload`,
         {
           method: 'POST',
           body: formData,
@@ -138,20 +123,24 @@ export default function UploadPage() {
       )
       setProgress(70)
 
-      if (!cloudRes.ok) throw new Error('Cloudinary upload failed.')
+      if (!cloudRes.ok) {
+        const errData = await cloudRes.json().catch(() => ({}))
+        console.error('Cloudinary error response:', errData)
+        throw new Error(errData?.error?.message || 'Cloudinary upload failed.')
+      }
       const cloudData = await cloudRes.json()
       const uploadedUrl = cloudData.secure_url
 
       setProgress(85)
 
-      // Step 4: Save report metadata, encryption key, and AI summary to the backend
+      // Step 3: Save report metadata and encryption key to the backend
       await api.post('/api/reports/addReport', {
         fileUrl: uploadedUrl,
         fileName: filename,
         description: description.trim() || 'Medical Report',
         fileType: fileMimeType,
         encryptionKey: keyHex,
-        aiSummary: aiSummary
+        aiSummary: ''
       })
 
       setProgress(100)
