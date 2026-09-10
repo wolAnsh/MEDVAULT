@@ -232,9 +232,7 @@ npm start
 ## 🔮 Future Roadmap
 
 - [ ] AI-driven health trends prediction & anomaly detection over historical vitals.
-- [ ] Integration with FHIR / HL7 international healthcare standards.
-- [ ] Multi-language report translation using AI.
-- [ ] Cross-platform mobile app (React Native).
+- [ ] RAG based GenAI.
 
 ---
 
