@@ -91,21 +91,6 @@
 
 ---
 
-## 📸 Screenshots
-
-Below are key UI screenshots from the MedVault application:
-
-| Feature | Preview |
-| :--- | :--- |
-| **Report Upload & Cloud Sync** | ![Upload Report](https://github.com/user-attachments/assets/2c14602c-c433-4f7a-8991-a1a40fe47c44) |
-| **Shareable Code & QR Generation** | ![Shareable Code Generation](https://github.com/user-attachments/assets/d8e7b08e-5e87-444b-9a55-55440d083058) |
-| **Time-Bound Access Control** | ![Time-bound Access](https://github.com/user-attachments/assets/de16b8a7-b702-40ae-a840-14a93625273b) |
-| **Patient History & Timeline** | ![Patient History](https://github.com/user-attachments/assets/5bc1374b-f0c3-4e66-b591-cdea57685409) |
-| **Authentication & OTP Verification** | ![Authentication Flow](https://github.com/user-attachments/assets/5092b4fa-9622-4fb8-950a-b54481d9c4d1) |
-| **Cloudinary Integration** | ![Cloudinary Integration](https://github.com/user-attachments/assets/ac38a710-707c-49e9-861b-0f07af8f427e) |
-
----
-
 ## 🚀 Getting Started
 
 ### Prerequisites
