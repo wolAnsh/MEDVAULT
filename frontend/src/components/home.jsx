@@ -49,6 +49,13 @@ const AfterLoginDashboard = () => {
       href: "/vitals",
       gradient: "linear-gradient(135deg, #14b8a6, #0d9488)",
     },
+    {
+      icon: "🤖",
+      title: "Medical RAG AI",
+      desc: "Ask AI about your reports & clinical reference literature",
+      href: "/chat",
+      gradient: "linear-gradient(135deg, #6366f1, #4f46e5)",
+    },
   ];
 
   const stats = [
@@ -70,6 +77,7 @@ const AfterLoginDashboard = () => {
           <Link to="/reports" className="sidebar-link">📄 My Reports</Link>
           <Link to="/upload" className="sidebar-link">📤 Upload</Link>
           <Link to="/vitals" className="sidebar-link">💓 Health Vitals</Link>
+          <Link to="/chat" className="sidebar-link">🤖 Medical AI</Link>
           <Link to="/profile" className="sidebar-link">👤 Profile</Link>
         </nav>
         <button className="sidebar-logout" onClick={handleLogout}>

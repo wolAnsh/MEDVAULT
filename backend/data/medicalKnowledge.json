@@ -1,0 +1,128 @@
+[
+  {
+    "id": "cbc_hemoglobin",
+    "category": "Complete Blood Count (CBC)",
+    "topic": "Hemoglobin (Hb)",
+    "normalRange": "Men: 13.8 - 17.2 g/dL, Women: 12.1 - 15.1 g/dL",
+    "content": "Hemoglobin is an iron-rich protein in red blood cells that carries oxygen from lungs throughout the body. Low hemoglobin indicates anemia, nutritional deficiency (iron, B12, folate), active blood loss, or bone marrow disorders. Symptoms include fatigue, pale skin, shortness of breath, and dizziness. High hemoglobin may indicate polycythemia, chronic hypoxia (smoking, COPD), high altitude living, or dehydration."
+  },
+  {
+    "id": "cbc_wbc",
+    "category": "Complete Blood Count (CBC)",
+    "topic": "White Blood Cell Count (WBC)",
+    "normalRange": "4,500 - 11,000 cells/mcL",
+    "content": "White blood cells defend against bacterial, viral, and fungal infections. Elevated WBC (Leukocytosis) suggests active infection, acute inflammation, tissue damage, physical or emotional stress, or leukemia. Decreased WBC (Leukopenia) may indicate viral infection, autoimmune condition (like lupus), bone marrow suppression, severe sepsis, or adverse medication effects."
+  },
+  {
+    "id": "cbc_platelets",
+    "category": "Complete Blood Count (CBC)",
+    "topic": "Platelet Count (Thrombocytes)",
+    "normalRange": "150,000 - 450,000 /mcL",
+    "content": "Platelets are cell fragments essential for blood clotting and stopping bleeding. Low platelets (Thrombocytopenia < 150,000/mcL) increases risk of bruising, petechiae, prolonged bleeding, often caused by dengue, viral infections, idiopathic thrombocytopenic purpura (ITP), or liver disease. Elevated platelets (Thrombocytosis > 450,000/mcL) occurs in reactive states (iron deficiency, acute inflammation, surgery) or essential thrombocythemia."
+  },
+  {
+    "id": "lft_alt_sgpt",
+    "category": "Liver Function Test (LFT)",
+    "topic": "Alanine Aminotransferase (ALT / SGPT)",
+    "normalRange": "7 - 56 units/liter (U/L)",
+    "content": "ALT (Alanine Transaminase or SGPT) is an enzyme found primarily inside liver hepatocytes. When liver cells are stressed or injured, ALT leaks into the bloodstream. Elevated ALT is a sensitive biomarker for non-alcoholic fatty liver disease (NAFLD/NASH), viral hepatitis (A, B, C), medication hepatotoxicity (acetaminophen, statins), excessive alcohol consumption, or acute biliary obstruction."
+  },
+  {
+    "id": "lft_ast_sgot",
+    "category": "Liver Function Test (LFT)",
+    "topic": "Aspartate Aminotransferase (AST / SGOT)",
+    "normalRange": "10 - 40 units/liter (U/L)",
+    "content": "AST is present in liver cells as well as cardiac muscle, skeletal muscle, and kidneys. While elevated AST signals liver inflammation, an AST to ALT ratio (De Ritis ratio) greater than 2:1 is suggestive of alcoholic liver disease or advanced cirrhosis. Moderate elevations can also occur following intense physical exercise or muscle trauma."
+  },
+  {
+    "id": "lft_bilirubin",
+    "category": "Liver Function Test (LFT)",
+    "topic": "Total & Direct Bilirubin",
+    "normalRange": "Total Bilirubin: 0.1 - 1.2 mg/dL; Direct (Conjugated): < 0.3 mg/dL",
+    "content": "Bilirubin is a yellowish byproduct of normal red blood cell breakdown, processed and cleared by the liver through bile. Hyperbilirubinemia causes clinical jaundice (yellowing of sclera and skin) and dark urine. Elevated indirect (unconjugated) bilirubin suggests hemolysis or Gilbert's syndrome. Elevated direct (conjugated) bilirubin points to biliary duct obstruction (gallstones) or hepatocellular cholestasis."
+  },
+  {
+    "id": "kft_creatinine",
+    "category": "Kidney Function Test (KFT / RFT)",
+    "topic": "Serum Creatinine & eGFR",
+    "normalRange": "Creatinine: 0.7 - 1.3 mg/dL (men), 0.6 - 1.1 mg/dL (women); eGFR > 90 mL/min/1.73m²",
+    "content": "Creatinine is a waste product generated from daily muscle metabolism, excreted exclusively by kidney glomeruli. Elevated serum creatinine indicates decreased glomerular filtration rate (impaired renal clearance) in acute kidney injury (AKI) or chronic kidney disease (CKD). Causes include dehydration, diabetic nephropathy, hypertensive nephrosclerosis, urinary tract obstruction, or nephrotoxic drugs (NSAIDs, aminoglycosides)."
+  },
+  {
+    "id": "kft_bun",
+    "category": "Kidney Function Test (KFT / RFT)",
+    "topic": "Blood Urea Nitrogen (BUN)",
+    "normalRange": "7 - 20 mg/dL",
+    "content": "BUN measures the amount of urea nitrogen in blood, produced by the liver from protein breakdown and cleared by kidneys. A high BUN to Creatinine ratio (> 20:1) suggests prerenal azotemia (dehydration, congestive heart failure, gastrointestinal bleed, or high-protein diet). Low BUN occurs in liver dysfunction or malnutrition."
+  },
+  {
+    "id": "diabetes_hba1c",
+    "category": "Diabetes & Glucose Metabolism",
+    "topic": "Hemoglobin A1c (HbA1c / Glycated Hemoglobin)",
+    "normalRange": "Normal: < 5.7%; Pre-diabetes: 5.7% - 6.4%; Diabetes: >= 6.5%",
+    "content": "HbA1c reflects average blood sugar control over the previous 2 to 3 months by measuring the percentage of hemoglobin bound to glucose. It does not require fasting. Levels above 6.5% confirm diabetes mellitus. Tight glycemic control (target generally < 7.0% for non-pregnant adults) prevents microvascular complications such as retinopathy, nephropathy, and peripheral neuropathy."
+  },
+  {
+    "id": "diabetes_fasting_blood_sugar",
+    "category": "Diabetes & Glucose Metabolism",
+    "topic": "Fasting Plasma Glucose (FBS)",
+    "normalRange": "Normal: 70 - 99 mg/dL; Impaired / Pre-diabetes: 100 - 125 mg/dL; Diabetes: >= 126 mg/dL",
+    "content": "Fasting blood sugar measures circulating glucose after an overnight fast of at least 8 hours. Values >= 126 mg/dL on two separate occasions diagnostic of diabetes. Hypoglycemia (< 70 mg/dL) produces symptoms of shakiness, sweating, palpitations, confusion, and requires prompt administration of fast-acting carbohydrates."
+  },
+  {
+    "id": "lipid_total_cholesterol",
+    "category": "Lipid Profile (Cardiovascular Health)",
+    "topic": "Total Cholesterol & LDL-C ('Bad Cholesterol')",
+    "normalRange": "Total: < 200 mg/dL; LDL-C: Optimal < 100 mg/dL (< 70 mg/dL for high cardiovascular risk)",
+    "content": "Low-Density Lipoprotein (LDL) transports cholesterol to peripheral blood vessels where it can oxidize and form atheromatous plaques in coronary and carotid arteries. Elevated LDL increases the risk of coronary artery disease, angina, myocardial infarction (heart attack), and ischemic stroke. Management involves dietary modification (low saturated fats, high soluble fiber), aerobic exercise, and statin therapy if indicated."
+  },
+  {
+    "id": "lipid_hdl_triglycerides",
+    "category": "Lipid Profile (Cardiovascular Health)",
+    "topic": "HDL-C ('Good Cholesterol') & Triglycerides",
+    "normalRange": "HDL: > 40 mg/dL (men), > 50 mg/dL (women); Triglycerides: < 150 mg/dL",
+    "content": "High-Density Lipoprotein (HDL) conducts reverse cholesterol transport, carrying excess cholesterol from vascular walls back to the liver for excretion. Higher HDL is cardio-protective. High triglycerides (> 150 mg/dL, and severe > 500 mg/dL) are associated with insulin resistance, obesity, excess refined sugars/alcohol, and increase the risk of acute pancreatitis."
+  },
+  {
+    "id": "thyroid_tsh",
+    "category": "Thyroid Function Panel",
+    "topic": "Thyroid Stimulating Hormone (TSH)",
+    "normalRange": "0.4 - 4.0 mIU/L (or uIU/mL)",
+    "content": "TSH is secreted by the anterior pituitary gland to stimulate thyroid hormone (T3 and T4) synthesis. Because of negative feedback, elevated TSH (> 4.0 mIU/L) indicates Primary Hypothyroidism (underactive thyroid) or subclinical hypothyroidism; symptoms include fatigue, unexplained weight gain, cold intolerance, constipation, and dry skin. Low TSH (< 0.4 mIU/L) indicates Hyperthyroidism (e.g., Graves' disease, toxic nodule); symptoms include anxiety, tremors, tachycardia, weight loss, and heat intolerance."
+  },
+  {
+    "id": "thyroid_free_t4",
+    "category": "Thyroid Function Panel",
+    "topic": "Free Thyroxine (Free T4)",
+    "normalRange": "0.8 - 1.8 ng/dL",
+    "content": "Free T4 represents the active, unbound fraction of thyroxine circulating in blood. Used in conjunction with TSH to confirm overt thyroid disease. In overt hypothyroidism, TSH is elevated while Free T4 is low. In subclinical hypothyroidism, TSH is elevated while Free T4 remains within normal limits."
+  },
+  {
+    "id": "urinalysis_protein_leukocytes",
+    "category": "Urinalysis (Routine Urine Examination)",
+    "topic": "Proteinuria, Leukocyte Esterase, & Nitrites",
+    "normalRange": "Protein: Negative; Leukocyte Esterase: Negative; Nitrites: Negative",
+    "content": "Presence of protein in urine (Proteinuria / Albuminuria) indicates glomerular barrier breakdown, commonly due to early diabetic kidney disease, hypertension, or glomerulonephritis. Positive leukocyte esterase and positive nitrites strongly suggest urinary tract infection (UTI), frequently caused by gram-negative bacteria like E. coli. Microscopic hematuria (RBCs in urine) warrants evaluation for stones, infection, or malignancy."
+  },
+  {
+    "id": "cardiac_troponin_crp",
+    "category": "Cardiac & Inflammatory Biomarkers",
+    "topic": "High-Sensitivity Troponin & hs-CRP",
+    "normalRange": "Troponin I/T: < 0.04 ng/mL (assay specific); hs-CRP: < 1.0 mg/L (low cardiovascular risk)",
+    "content": "Troponin is a regulatory protein released into bloodstream exclusively during myocardial cell necrosis (heart attack). Any elevation above the 99th percentile upper reference limit is indicative of acute coronary syndrome (ACS). High-sensitivity C-Reactive Protein (hs-CRP) is an acute-phase reactant synthesized by the liver indicating systemic vascular inflammation and long-term cardiovascular risk."
+  },
+  {
+    "id": "vitamins_b12_d3",
+    "category": "Nutritional & Vitamin Biomarkers",
+    "topic": "Vitamin B12 (Cobalamin) & 25-Hydroxy Vitamin D",
+    "normalRange": "Vitamin B12: 200 - 900 pg/mL; Vitamin D (25-OH): 30 - 100 ng/mL",
+    "content": "Vitamin B12 is crucial for DNA synthesis, erythropoiesis, and neurological myelin maintenance. Deficiency (< 200 pg/mL) causes megaloblastic anemia, peripheral neuropathy (pins and needles in hands/feet), memory impairment, and fatigue. Vitamin D is essential for calcium absorption and bone mineralization; deficiency (< 20 ng/mL) causes osteopenia, bone pain, muscle weakness, and fatigue."
+  },
+  {
+    "id": "electrolyte_sodium_potassium",
+    "category": "Serum Electrolytes Panel",
+    "topic": "Sodium (Na+) & Potassium (K+)",
+    "normalRange": "Sodium: 135 - 145 mEq/L; Potassium: 3.5 - 5.0 mEq/L",
+    "content": "Sodium maintains extracellular fluid volume and osmotic balance. Hyponatremia (< 135 mEq/L) causes nausea, headache, confusion, and seizures. Potassium regulates resting membrane potential in cardiac and skeletal muscle. Hypokalemia (< 3.5 mEq/L) causes muscle cramps and ventricular arrhythmias. Hyperkalemia (> 5.0 mEq/L) is life-threatening, causing peaked T waves, conduction blocks, and cardiac arrest."
+  }
+]

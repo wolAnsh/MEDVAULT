@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import api from '../api/config'
+import ReportRagChat from './ReportRagChat'
 import './viewReports.css'
 
 // ── Decryption Helpers ────────────────────────────────────────────────────────
@@ -96,6 +97,7 @@ export default function ViewReportsPage() {
   const [decrypting, setDecrypting] = useState(false)
   const [decryptError, setDecryptError] = useState('')
   const [generatingAI, setGeneratingAI] = useState(false)
+  const [chatModalOpen, setChatModalOpen] = useState(false)
 
   // ── Generate / Regenerate AI Summary ────────────────────────────────────────
   const handleGenerateAISummary = async () => {
@@ -229,6 +231,7 @@ export default function ViewReportsPage() {
     setQrData(null)
     setDecryptError('')
     setDecryptedUrl(null)
+    setChatModalOpen(false)
 
     if (report.encryptionKey) {
       setDecrypting(true)
@@ -253,6 +256,7 @@ export default function ViewReportsPage() {
     setSelectedReport(null)
     setQrData(null)
     setDecryptedUrl(null)
+    setChatModalOpen(false)
   }
 
   // ── Filter ──────────────────────────────────────────────────────────────────
@@ -451,33 +455,54 @@ export default function ViewReportsPage() {
                 }}>
                   🤖 MedVault AI Summary
                 </label>
-                <button
-                  onClick={handleGenerateAISummary}
-                  disabled={generatingAI || decrypting}
-                  style={{
-                    background: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: '6px',
-                    padding: '6px 14px',
-                    fontSize: '12.5px',
-                    fontWeight: '600',
-                    cursor: generatingAI || decrypting ? 'not-allowed' : 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    boxShadow: '0 2px 8px rgba(14, 165, 233, 0.3)',
-                    opacity: generatingAI || decrypting ? 0.7 : 1
-                  }}
-                >
-                  {generatingAI ? (
-                    <><span className="spinner" style={{ width: 14, height: 14, borderWidth: 2 }} /> Analyzing...</>
-                  ) : selectedReport.aiSummary ? (
-                    '🔄 Regenerate'
-                  ) : (
-                    '✨ Generate AI Summary'
-                  )}
-                </button>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                      onClick={() => setChatModalOpen(prev => !prev)}
+                      style={{
+                        background: chatModalOpen ? 'rgba(99, 102, 241, 0.2)' : 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+                        color: '#fff',
+                        border: chatModalOpen ? '1px solid #818cf8' : 'none',
+                        borderRadius: '6px',
+                        padding: '6px 14px',
+                        fontSize: '12.5px',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        boxShadow: '0 2px 8px rgba(99, 102, 241, 0.3)'
+                      }}
+                    >
+                      💬 {chatModalOpen ? 'Hide Chat' : 'Ask RAG AI'}
+                    </button>
+                    <button
+                      onClick={handleGenerateAISummary}
+                      disabled={generatingAI || decrypting}
+                      style={{
+                        background: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: '6px',
+                        padding: '6px 14px',
+                        fontSize: '12.5px',
+                        fontWeight: '600',
+                        cursor: generatingAI || decrypting ? 'not-allowed' : 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        boxShadow: '0 2px 8px rgba(14, 165, 233, 0.3)',
+                        opacity: generatingAI || decrypting ? 0.7 : 1
+                      }}
+                    >
+                      {generatingAI ? (
+                        <><span className="spinner" style={{ width: 14, height: 14, borderWidth: 2 }} /> Analyzing...</>
+                      ) : selectedReport.aiSummary ? (
+                        '🔄 Regenerate'
+                      ) : (
+                        '✨ Generate AI Summary'
+                      )}
+                    </button>
+                  </div>
               </div>
 
               {selectedReport.aiSummary ? (
@@ -493,6 +518,15 @@ export default function ViewReportsPage() {
                 <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)', margin: 0 }}>
                   No AI summary generated yet. Click "Generate AI Summary" above to analyze this report using Gemini AI.
                 </p>
+              )}
+
+              {chatModalOpen && (
+                <div style={{ marginTop: '16px' }}>
+                  <ReportRagChat
+                    selectedReport={selectedReport}
+                    onClose={() => setChatModalOpen(false)}
+                  />
+                </div>
               )}
             </div>
 

@@ -6,6 +6,8 @@ const rateLimit = require('express-rate-limit')
 const reportRoutes = require('./routes/reportRoutes')
 const authRoutes = require('./routes/authRoutes')
 const vitalsRoutes = require('./routes/vitalsRoutes')
+const ragRoutes = require('./routes/ragRoutes')
+const ragService = require('./services/medicalRagService')
 
 dotenv.config()
 
@@ -52,6 +54,7 @@ app.use('/auth', authLimiter, authRoutes)
 app.use('/api/reports', reportRoutes)
 app.use('/api/reports/generate-share-link', qrLimiter)
 app.use('/api/vitals', vitalsRoutes)
+app.use('/api/rag', ragRoutes)
 
 // ── Health Check ──────────────────────────────────────────────────────────────
 app.get('/health', (req, res) => {
@@ -78,4 +81,10 @@ mongoose.connect(process.env.MONGODB_URI)
   })
 
 const PORT = process.env.PORT || 5000
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`))
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`)
+  // Initialize Medical RAG knowledge base in background
+  ragService.initializeKnowledgeBase()
+    .then(() => console.log('Medical RAG Knowledge Base ready.'))
+    .catch(err => console.warn('Medical RAG initialization warning:', err.message))
+})

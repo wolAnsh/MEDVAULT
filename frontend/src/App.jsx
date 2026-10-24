@@ -20,6 +20,7 @@ import ViewReports from "./components/viewReports";
 import VitalsTracker from "./components/vitals";
 import Profile from "./components/profile";
 import AuthGuard from "./components/AuthGuard";
+import MedicalRagChatPage from "./pages/MedicalRagChatPage";
 import "./App.css";
 
 export const scroll = new SmoothScroll('a[href*="#"]', {
@@ -63,6 +64,7 @@ const App = () => {
           <Route path="/upload" element={<AuthGuard><Medupload /></AuthGuard>} />
           <Route path="/reports" element={<AuthGuard><ViewReports /></AuthGuard>} />
           <Route path="/vitals" element={<AuthGuard><VitalsTracker /></AuthGuard>} />
+          <Route path="/chat" element={<AuthGuard><MedicalRagChatPage /></AuthGuard>} />
           <Route path="/profile" element={<AuthGuard><Profile /></AuthGuard>} />
         </Routes>
       </Router>
