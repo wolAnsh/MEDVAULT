@@ -10,6 +10,8 @@
 [![MongoDB](https://img.shields.io/badge/Database-MongoDB-47A248?logo=mongodb&logoColor=white)](https://www.mongodb.com/)
 [![Cloudinary](https://img.shields.io/badge/Storage-Cloudinary-3448C5?logo=cloudinary&logoColor=white)](https://cloudinary.com/)
 [![Google Gemini AI](https://img.shields.io/badge/AI-Google%20Gemini-4285F4?logo=google&logoColor=white)](https://deepmind.google/technologies/gemini/)
+[![Pinecone](https://img.shields.io/badge/Vector_DB-Pinecone-000000?logo=pinecone&logoColor=white)](https://www.pinecone.io/)
+[![RAG](https://img.shields.io/badge/Architecture-Clinical%20RAG-0ea5e9)](https://en.wikipedia.org/wiki/Retrieval-augmented_generation)
 [![JWT](https://img.shields.io/badge/Auth-JWT-000000?logo=jsonwebtokens&logoColor=white)](https://jwt.io/)
 [![License](https://img.shields.io/badge/License-ISC-blue.svg)](LICENSE)
 
@@ -28,6 +30,7 @@
 - [API Reference](#-api-reference)
   - [Authentication Routes](#authentication-routes)
   - [Medical Report Routes](#medical-report-routes)
+  - [Clinical RAG AI Routes](#clinical-rag-ai-routes)
   - [Vitals Telemetry Routes](#vitals-telemetry-routes)
 - [Security Features](#-security-features)
 - [Future Roadmap](#-future-roadmap)
@@ -37,7 +40,9 @@
 
 ## ✨ Features
 
-- **🛡️ Secure Storage & Cloud Delivery:** Upload and store medical reports safely with Cloudinary CDN integration and MongoDB mapping.
+- **🛡️ Secure Storage & Client-Side Encryption:** Upload and store medical reports safely with AES-GCM client-side encryption, Cloudinary CDN delivery, and MongoDB mapping.
+- **💬 Clinical RAG (Retrieval-Augmented Generation) Chatbot:** Interactive conversational assistant that allows patients to query complex medical reports, grounded in verified clinical reference literature, diagnostic ranges, and pathology guidelines.
+- **⚡ Vector Database & Semantic Similarity:** 3,072-dimensional embeddings via Google Gemini with cosine similarity search powered by Pinecone and a built-in semantic vector store cache.
 - **🤖 AI-Powered Medical Report Analysis:** Automated extraction of primary findings, diagnoses, and lab values powered by Google Gemini AI.
 - **📈 Automated Vitals Extraction:** Intelligent parsing of telemetry data (Blood Pressure, Heart Rate, Temperature, SpO2) directly from uploaded diagnostic documents into user health records.
 - **⏳ Time-Bound Access & QR Sharing:** Generate unique shareable links and instant QR codes with configurable Time-To-Live (TTL) for secure, temporary doctor access.
@@ -52,21 +57,28 @@
 ```
   ┌─────────────────────────────────────────────────────────┐
   │                    React 18 Frontend                    │
-  │        (User Dashboard, Upload, Vitals, QR Code)        │
+  │     (Dashboard, Report Vault, RAG Chat, Vitals, QR)     │
   └────────────────────────────┬────────────────────────────┘
                                │ HTTPS / JSON API
                                ▼
   ┌─────────────────────────────────────────────────────────┐
   │                   Express Node.js API                   │
   │     (Auth Limiter, JWT Verification, Controllers)      │
-  └──────┬─────────────────────┬────────────────────┬───────┘
-         │                     │                    │
-         ▼                     ▼                    ▼
-┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐
-│   MongoDB Atlas  │  │  Cloudinary CDN  │  │ Google Gemini AI │
-│ (Users, Reports, │  │ (Encrypted File  │  │ (Lab Summary &   │
-│ Vitals Telemetry)│  │    Document)     │  │ Auto-Vitals)     │
-└──────────────────┘  └──────────────────┘  └──────────────────┘
+  └──────┬────────────────┬─────────────────┬───────────────┘
+         │                │                 │
+         ▼                ▼                 ▼
+┌──────────────────┐ ┌──────────────┐ ┌───────────────────────────┐
+│   MongoDB Atlas  │ │Cloudinary CDN│ │  Pinecone / Vector Cache  │
+│ (Users, Reports, │ │ (Encrypted   │ │ (3,072-dim Embeddings &   │
+│ Vitals Telemetry)│ │  Files)      │ │  Clinical Knowledge Base) │
+└──────────────────┘ └──────────────┘ └─────────────┬─────────────┘
+                                                    │ Top-K Chunks
+                                                    ▼
+                                      ┌───────────────────────────┐
+                                      │      Google Gemini AI     │
+                                      │  (Clinical RAG Reasoning  │
+                                      │  & Report Auto-Vitals)    │
+                                      └───────────────────────────┘
 ```
 
 ---
@@ -84,7 +96,8 @@
 ### Backend
 - **Runtime:** Node.js, Express.js
 - **Database:** MongoDB with Mongoose ORM
-- **AI Intelligence:** `@google/generative-ai` (Gemini API)
+- **AI & Clinical RAG:** `@google/generative-ai` (Gemini 3.8 Flash, `gemini-embedding-001` 3,072-dim embeddings)
+- **Vector Database:** `@pinecone-database/pinecone` (Pinecone Cloud Vector DB + built-in cosine similarity cache)
 - **Cloud Storage:** Cloudinary SDK
 - **Security:** `jsonwebtoken` (JWT), `bcryptjs`, `express-rate-limit`, `cors`
 - **Utilities:** `multer` (memory buffering), `qrcode` (QR code generation), `nodemailer` (OTP email delivery)
@@ -122,8 +135,10 @@ CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
 
-# AI Feature (Google Gemini)
+# AI & Medical RAG (Google Gemini + Pinecone)
 GEMINI_API_KEY=your_gemini_api_key
+PINECONE_API_KEY=your_pinecone_api_key_optional
+PINECONE_INDEX=medvault-medical-kb
 
 # Google OAuth
 GOOGLE_CLIENT_ID=your_google_client_id
@@ -210,6 +225,16 @@ npm start
 
 ---
 
+### Clinical RAG AI Routes (`/api/rag`)
+
+| Method | Endpoint | Access | Description |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/rag/ask` | Protected | Query Medical RAG Chatbot against report findings and vector knowledge base |
+| `GET` | `/api/rag/status` | Protected | Check vector knowledge base index status, vector engine, and total entries |
+| `POST` | `/api/rag/seed` | Protected | Manually trigger knowledge base re-indexing into Pinecone / vector cache |
+
+---
+
 ### Vitals Telemetry Routes (`/api/vitals`)
 
 | Method | Endpoint | Access | Description |
@@ -221,6 +246,7 @@ npm start
 
 ## 🔒 Security Features
 
+- **Client-Side AES-GCM Encryption:** Reports are encrypted in the browser prior to cloud upload so plaintext data is never exposed.
 - **JWT Authentication:** Stateful token validation with expiration policy.
 - **Bcrypt Hashing:** Passwords hashed with salt rounds prior to persistence.
 - **Rate Limiting:** Express rate limiters protect auth routes (max 20 requests / 15 min) and share link generation (max 30 requests / 5 min).
@@ -231,8 +257,9 @@ npm start
 
 ## 🔮 Future Roadmap
 
+- [x] Clinical RAG (Retrieval-Augmented Generation) Chatbot over medical literature & user reports.
 - [ ] AI-driven health trends prediction & anomaly detection over historical vitals.
-- [ ] RAG based GenAI.
+- [ ] Multi-lingual report translation & patient audio summaries.
 
 ---
 
