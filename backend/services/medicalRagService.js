@@ -1,3 +1,4 @@
+require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
@@ -40,7 +41,7 @@ function cosineSimilarity(vecA, vecB) {
 
 class MedicalRagService {
   constructor() {
-    this.apiKey = process.env.GEMINI_API_KEY;
+    this.apiKey = process.env.GEMINI_API_KEY || null;
     this.genAI = this.apiKey ? new GoogleGenerativeAI(this.apiKey) : null;
     this.pineconeApiKey = process.env.PINECONE_API_KEY || null;
     this.pineconeIndexName = process.env.PINECONE_INDEX || 'medvault-medical-kb';
@@ -58,9 +59,21 @@ class MedicalRagService {
     }
   }
 
+  getGenAI() {
+    if (!this.genAI) {
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (apiKey) {
+        this.apiKey = apiKey;
+        this.genAI = new GoogleGenerativeAI(apiKey);
+      }
+    }
+    return this.genAI;
+  }
+
   // ── Embed text using Gemini Embedding Model ──────────────────────────────
   async getEmbedding(text) {
-    if (!this.genAI) {
+    const genAI = this.getGenAI();
+    if (!genAI) {
       throw new Error('GEMINI_API_KEY is not configured in backend environment.');
     }
     const candidateEmbeddingModels = ['gemini-embedding-001', 'gemini-embedding-2'];
@@ -68,7 +81,7 @@ class MedicalRagService {
 
     for (const modelName of candidateEmbeddingModels) {
       try {
-        const model = this.genAI.getGenerativeModel({ model: modelName });
+        const model = genAI.getGenerativeModel({ model: modelName });
         const result = await model.embedContent(text);
         return result.embedding.values;
       } catch (err) {
@@ -113,7 +126,7 @@ class MedicalRagService {
       const textToEmbed = `${item.category}: ${item.topic}. Normal Range: ${item.normalRange}. ${item.content}`;
       try {
         let embedding = null;
-        if (this.genAI) {
+        if (this.getGenAI()) {
           embedding = await this.getEmbedding(textToEmbed);
         }
 
@@ -172,7 +185,7 @@ class MedicalRagService {
     }
 
     // Try Pinecone first if configured
-    if (this.pinecone && this.genAI) {
+    if (this.pinecone && this.getGenAI()) {
       try {
         const queryEmbedding = await this.getEmbedding(query);
         const index = this.pinecone.index(this.pineconeIndexName);
@@ -281,11 +294,15 @@ INSTRUCTIONS:
 6. Always maintain a professional, calm tone. Always conclude with a brief disclaimer that this is an AI interpretation and must not replace professional medical diagnosis or consultation.`;
 
     const candidateModels = ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-flash-latest"];
+    const genAI = this.getGenAI();
+    if (!genAI) {
+      throw new Error('GEMINI_API_KEY is not configured in backend environment.');
+    }
     let lastError = null;
 
     for (const modelName of candidateModels) {
       try {
-        const model = this.genAI.getGenerativeModel({ model: modelName }, { apiVersion: "v1" });
+        const model = genAI.getGenerativeModel({ model: modelName }, { apiVersion: "v1" });
         const result = await model.generateContent(prompt);
         const answer = result.response.text();
 

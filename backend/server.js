@@ -1,6 +1,6 @@
+require('dotenv').config()
 const express = require('express')
 const mongoose = require('mongoose')
-const dotenv = require('dotenv')
 const cors = require('cors')
 const rateLimit = require('express-rate-limit')
 const reportRoutes = require('./routes/reportRoutes')
@@ -8,8 +8,6 @@ const authRoutes = require('./routes/authRoutes')
 const vitalsRoutes = require('./routes/vitalsRoutes')
 const ragRoutes = require('./routes/ragRoutes')
 const ragService = require('./services/medicalRagService')
-
-dotenv.config()
 
 const app = express()
 
