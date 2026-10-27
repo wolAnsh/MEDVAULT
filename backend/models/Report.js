@@ -1,3 +1,6 @@
+
+//old model -> switched to new model in UserReports.js
+
 const mongoose = require("mongoose");
 
 const reportSchema = new mongoose.Schema({
