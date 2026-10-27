@@ -18,21 +18,4 @@ const generateQRCode = async (text) => {
   })
 }
 
-/**
- * Generates a QR code as an SVG string (useful for download).
- * @param {string} text
- * @returns {Promise<string>} SVG string
- */
-const generateQRCodeSVG = async (text) => {
-  return await QRCode.toString(text, {
-    type: 'svg',
-    errorCorrectionLevel: 'H',
-    margin: 2,
-    color: {
-      dark: '#0f172a',
-      light: '#ffffff'
-    }
-  })
-}
-
 module.exports = { generateQRCode, generateQRCodeSVG }
